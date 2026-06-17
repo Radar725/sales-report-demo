@@ -1,18 +1,25 @@
 import { Button, Drawer, Space, Table, Tabs } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { mockDeals } from '../data/mockDeals';
+import type { DealRecord } from '../data/mockDeals';
 import { buildBreakdownRows, type BreakdownRow, type SummaryRow } from '../domain/analytics';
 import { type DimensionKey, getBreakdownDimensions, getDimension } from '../domain/dimensions';
 import { buildMetricColumns } from '../domain/metrics';
 
 type BreakdownDrawerProps = {
   open: boolean;
+  records: DealRecord[];
   primaryDimension: DimensionKey;
   row: SummaryRow | null;
   onClose: () => void;
 };
 
-export default function BreakdownDrawer({ open, primaryDimension, row, onClose }: BreakdownDrawerProps) {
+export default function BreakdownDrawer({
+  open,
+  records,
+  primaryDimension,
+  row,
+  onClose,
+}: BreakdownDrawerProps) {
   const primaryDimensionConfig = getDimension(primaryDimension);
   const breakdownDimensions = getBreakdownDimensions(primaryDimension);
 
@@ -27,7 +34,7 @@ export default function BreakdownDrawer({ open, primaryDimension, row, onClose }
       {row ? (
         <Tabs
           items={breakdownDimensions.map((breakdownDimension) => {
-            const dataSource = buildBreakdownRows(mockDeals, {
+            const dataSource = buildBreakdownRows(records, {
               primaryDimension,
               primaryDimensionValue: row.primaryDimensionValue,
               breakdownDimension: breakdownDimension.key,

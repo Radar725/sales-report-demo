@@ -6,15 +6,32 @@ import SummaryTable from './components/SummaryTable';
 import { mockDeals } from './data/mockDeals';
 import { buildSummaryRows, type SummaryRow } from './domain/analytics';
 import { getDimension, type DimensionKey } from './domain/dimensions';
+import { filterDealRecords, type SalesDashboardFilters } from './domain/filters';
+
+const defaultFilters: SalesDashboardFilters = {
+  dateRange: null,
+  departments: [],
+  consultants: [],
+  dealType: 'all',
+  channelCategories: [],
+  channels: [],
+  projectCategories: [],
+  projects: [],
+  customerScope: 'all',
+  cities: [],
+  institutions: [],
+};
 
 export default function App() {
   const [primaryDimension, setPrimaryDimension] = useState<DimensionKey>('consultant');
+  const [filters, setFilters] = useState<SalesDashboardFilters>(defaultFilters);
   const [selectedRow, setSelectedRow] = useState<SummaryRow | null>(null);
 
+  const filteredRecords = useMemo(() => filterDealRecords(mockDeals, filters), [filters]);
   const primaryDimensionConfig = getDimension(primaryDimension);
   const summaryRows = useMemo(
-    () => buildSummaryRows(mockDeals, primaryDimension),
-    [primaryDimension],
+    () => buildSummaryRows(filteredRecords, primaryDimension),
+    [filteredRecords, primaryDimension],
   );
 
   return (
@@ -26,7 +43,13 @@ export default function App() {
 
       <Card className="toolbar-card">
         <FilterBar
+          filters={filters}
+          records={mockDeals}
           primaryDimension={primaryDimension}
+          onFiltersChange={(nextFilters) => {
+            setFilters(nextFilters);
+            setSelectedRow(null);
+          }}
           onPrimaryDimensionChange={(dimension) => {
             setPrimaryDimension(dimension);
             setSelectedRow(null);
@@ -44,6 +67,7 @@ export default function App() {
 
       <BreakdownDrawer
         open={selectedRow !== null}
+        records={filteredRecords}
         primaryDimension={primaryDimension}
         row={selectedRow}
         onClose={() => setSelectedRow(null)}

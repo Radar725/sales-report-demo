@@ -112,6 +112,22 @@ describe('sales analytics aggregation', () => {
     ]);
   });
 
+  it('builds summary rows from an already filtered record set', () => {
+    const rows = buildSummaryRows(
+      mockDeals.filter((record) => record.customerCreatedInPeriod),
+      'consultant',
+    );
+
+    expect(rows.find((row) => row.primaryDimensionValue === '张敏')).toMatchObject({
+      reportedAmount: 1250000,
+      dealCount: 3,
+    });
+    expect(rows.find((row) => row.primaryDimensionValue === '李然')).toMatchObject({
+      reportedAmount: 1180000,
+      dealCount: 2,
+    });
+  });
+
   it('sorts date breakdown rows chronologically ascending', () => {
     const rows = buildBreakdownRows(mockDeals, {
       primaryDimension: 'consultant',
