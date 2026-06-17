@@ -183,7 +183,7 @@ export default function FilterBar({
         onCancel={cancelModal}
         okText="确定"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form layout="vertical">
           <Form.Item label="部门">
