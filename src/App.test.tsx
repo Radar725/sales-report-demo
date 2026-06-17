@@ -239,4 +239,29 @@ describe('App', () => {
 
     expect(screen.getByRole('combobox', { name: '主维度' })).toBeInTheDocument();
   });
+
+  it('uses global filters for both dashboard totals and report rows', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // Dashboard shows deal count 1 (today has one deal)
+    expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+
+    const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
+    const selector = customerScopeFormItem.querySelector('.ant-select-selector')!;
+    fireEvent.mouseDown(selector);
+    fireEvent.click(await screen.findByText('当期新客'));
+
+    const filterBar = document.querySelector('.filter-bar')!;
+    await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));
+
+    // After filtering, dashboard moves to zero and report has no rows
+    await waitFor(() => {
+      expect(screen.getAllByText('¥0').length).toBeGreaterThan(0);
+    });
+
+    await openReportTab(user);
+
+    expect(screen.queryByRole('button', { name: '业绩拆解' })).not.toBeInTheDocument();
+  });
 });
