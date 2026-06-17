@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { Popover } from 'antd';
-import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export type MetricKey =
   | 'reportedAmount'
@@ -153,9 +152,24 @@ export function buildMetricColumns<T extends MetricValue>(): ColumnsType<T> {
         <span>
           {metric.label}
           <Popover content={metric.description}>
-            <QuestionCircleOutlined
-              style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
-            />
+            <span
+              style={{
+                marginLeft: 4,
+                color: '#999',
+                cursor: 'help',
+                border: '1px solid #999',
+                borderRadius: '50%',
+                width: 14,
+                height: 14,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+                lineHeight: 1,
+              }}
+            >
+              ?
+            </span>
           </Popover>
         </span>
       ) : (
