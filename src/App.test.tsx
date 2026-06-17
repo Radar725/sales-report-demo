@@ -8,22 +8,24 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByRole('columnheader', { name: '业绩总览' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '上报业绩' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '新诊业绩' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '历史复购业绩当期贡献率' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '上报业绩 ?' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '新诊业绩 ?' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: '历史复购业绩当期贡献率 ?' }),
+    ).toBeInTheDocument();
   });
 
   it('renders the same expanded metrics inside the breakdown drawer', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     expect(within(drawer).getByRole('columnheader', { name: '业绩总览' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('columnheader', { name: '复购业绩' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '复购业绩 ?' })).toBeInTheDocument();
     expect(
-      within(drawer).getByRole('columnheader', { name: '历史复购客户当期贡献率' }),
+      within(drawer).getByRole('columnheader', { name: '历史复购客户当期贡献率 ?' }),
     ).toBeInTheDocument();
   });
 
@@ -50,7 +52,7 @@ describe('App', () => {
         name: '查 询',
       }),
     );
-    await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     expect(within(drawer).getByRole('tab', { name: '咨询师' })).toBeInTheDocument();
@@ -60,7 +62,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     expect(within(drawer).queryByRole('tab', { name: '部门' })).not.toBeInTheDocument();
@@ -78,45 +80,34 @@ describe('App', () => {
         name: '查 询',
       }),
     );
-    await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     expect(within(drawer).getByRole('tab', { name: '项目' })).toBeInTheDocument();
   });
 
-  it('renders the toolbar-visible filters and removes performance status', () => {
+  it('renders the inline filters and removes performance status', () => {
     render(<App />);
 
     expect(screen.getByText('统计时间')).toBeInTheDocument();
     expect(screen.getByText('主维度')).toBeInTheDocument();
     expect(screen.getByText('客户统计范围')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '全部筛选' })).toBeInTheDocument();
+    expect(screen.getAllByText('咨询师').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('渠道').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('项目').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: '展开 ▼' })).toBeInTheDocument();
     expect(screen.queryByText('业绩状态')).not.toBeInTheDocument();
   });
 
-  it('shows detailed filters in Modal after clicking more filters', async () => {
+  it('shows secondary filters after expanding inline filters', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '全部筛选' }));
+    await user.click(screen.getByRole('button', { name: '展开 ▼' }));
 
-    const modal = screen.getByRole('dialog', { name: '全部筛选' });
-    // All 12 filters are shown in a 3-column grid
-    const gridLabels = modal.querySelectorAll('.filter-grid-label');
-    const labelTexts = Array.from(gridLabels).map((el) => el.textContent?.trim());
-    expect(labelTexts).toEqual(
-      expect.arrayContaining([
-        '统计时间',
-        '主维度',
-        '客户统计范围',
-        '咨询师',
-        '渠道',
-        '项目',
-        '城市&机构',
-        '客户池',
-        '成交类型',
-      ]),
-    );
+    expect(screen.getByText('城市&机构')).toBeInTheDocument();
+    expect(screen.getByText('客户池')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '收起 ▲' })).toBeInTheDocument();
   });
 
   it('does not allow project to break down by project category', async () => {
@@ -131,7 +122,7 @@ describe('App', () => {
         name: '查 询',
       }),
     );
-    await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     expect(within(drawer).queryByRole('tab', { name: '项目分类' })).not.toBeInTheDocument();
@@ -154,7 +145,7 @@ describe('App', () => {
 
     // After filtering, the table should be empty (no record is both today AND a new customer)
     await waitFor(() => {
-      expect(screen.queryByRole('cell', { name: '20.0万' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '业绩拆解' })).not.toBeInTheDocument();
     });
   });
 
@@ -182,16 +173,42 @@ describe('App', () => {
     await user.click(within(filterBar2 as HTMLElement).getByRole('button', { name: '查 询' }));
 
     await waitFor(() => {
-      expect(screen.queryByRole('cell', { name: '180.0万' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('cell', { name: '李然' })).toBeInTheDocument();
     });
 
     // Open breakdown drawer — first row should now be 张敏 with filtered data
-    await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     // Switch to channel tab — "自然流量" (D005) should NOT appear since it's not a new customer
     await user.click(within(drawer).getByRole('tab', { name: '渠道' }));
     expect(within(drawer).getByRole('cell', { name: '信息流' })).toBeInTheDocument();
     expect(within(drawer).queryByRole('cell', { name: '自然流量' })).not.toBeInTheDocument();
+  });
+
+  it('opens performance detail drawer with row-level underlying deal records', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '业绩明细' })[0]);
+
+    const drawer = screen.getByRole('dialog', { name: '咨询师「张敏」· 业绩明细' });
+    expect(within(drawer).getByRole('columnheader', { name: '成交金额' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '合作比例' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '合作业绩' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '成交渠道' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '合作人名称' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '确认金额' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '确认日期' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '客户ID' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '电话' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '成交项目' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '成交状态' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '成交机构' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '成交日期' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '上报时间' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('cell', { name: 'C003' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('cell', { name: '13800010003' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('cell', { name: '转介绍' })).toBeInTheDocument();
   });
 });

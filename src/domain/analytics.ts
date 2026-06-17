@@ -18,6 +18,11 @@ type BreakdownQuery = {
   breakdownDimension: DimensionKey;
 };
 
+type DetailQuery = {
+  primaryDimension: DimensionKey;
+  primaryDimensionValue: string;
+};
+
 type AggregateSummary = {
   value: string;
 } & MetricValue;
@@ -137,4 +142,10 @@ export function buildBreakdownRows(records: DealRecord[], query: BreakdownQuery)
     breakdownDimensionValue: row.value,
     ...(({ value: _value, ...metrics }) => metrics)(row),
   }));
+}
+
+export function getDetailRecords(records: DealRecord[], query: DetailQuery) {
+  return records.filter(
+    (record) => getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue,
+  );
 }

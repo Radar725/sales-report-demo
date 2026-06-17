@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBreakdownRows, buildSummaryRows } from './analytics';
+import { buildBreakdownRows, buildSummaryRows, getDetailRecords } from './analytics';
 import { mockDeals } from '../data/mockDeals';
 
 describe('sales analytics aggregation', () => {
@@ -143,5 +143,14 @@ describe('sales analytics aggregation', () => {
       '2026-06-17',
       '2026-06-20',
     ]);
+  });
+
+  it('returns detail records for the selected summary row scope', () => {
+    const records = getDetailRecords(mockDeals, {
+      primaryDimension: 'consultant',
+      primaryDimensionValue: '张敏',
+    });
+
+    expect(records.map((record) => record.id)).toEqual(['D001', 'D002', 'D003', 'D004', 'D005']);
   });
 });
