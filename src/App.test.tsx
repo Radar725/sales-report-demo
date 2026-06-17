@@ -3,9 +3,16 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 
+async function openReportTab(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('tab', { name: '报表' }));
+}
+
 describe('App', () => {
-  it('renders expanded grouped metrics in the summary table', () => {
+  it('renders expanded grouped metrics in the summary table', async () => {
+    const user = userEvent.setup();
     render(<App />);
+
+    await openReportTab(user);
 
     expect(screen.getByRole('columnheader', { name: '业绩总览' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '上报业绩 ?' })).toBeInTheDocument();
@@ -19,6 +26,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await openReportTab(user);
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -33,6 +41,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await openReportTab(user);
     await user.click(screen.getByRole('combobox', { name: '主维度' }));
 
     expect(await screen.findByRole('option', { name: '日期' })).toBeInTheDocument();
@@ -44,14 +53,9 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await openReportTab(user);
     await user.click(screen.getByRole('combobox', { name: '主维度' }));
     await user.click(await screen.findByRole('option', { name: '部门' }));
-    // Click 查询 to apply the toolbar primary dimension
-    await user.click(
-      within(document.querySelector('.filter-bar') as HTMLElement).getByRole('button', {
-        name: '查 询',
-      }),
-    );
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -62,6 +66,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await openReportTab(user);
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -72,14 +77,9 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await openReportTab(user);
     await user.click(screen.getByRole('combobox', { name: '主维度' }));
     await user.click(await screen.findByRole('option', { name: '项目分类' }));
-    // Click 查询 to apply the toolbar primary dimension
-    await user.click(
-      within(document.querySelector('.filter-bar') as HTMLElement).getByRole('button', {
-        name: '查 询',
-      }),
-    );
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -90,7 +90,7 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByText('统计时间')).toBeInTheDocument();
-    expect(screen.getByText('主维度')).toBeInTheDocument();
+    expect(screen.queryByText('主维度')).not.toBeInTheDocument();
     expect(screen.getByText('客户统计范围')).toBeInTheDocument();
     expect(screen.getAllByText('咨询师').length).toBeGreaterThan(0);
     expect(screen.getAllByText('渠道').length).toBeGreaterThan(0);
@@ -114,14 +114,9 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await openReportTab(user);
     await user.click(screen.getByRole('combobox', { name: '主维度' }));
     await user.click(await screen.findByRole('option', { name: '项目' }));
-    // Click 查询 to apply the toolbar primary dimension
-    await user.click(
-      within(document.querySelector('.filter-bar') as HTMLElement).getByRole('button', {
-        name: '查 询',
-      }),
-    );
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -131,6 +126,8 @@ describe('App', () => {
   it('filters the summary table by customer statistical scope', async () => {
     const user = userEvent.setup();
     render(<App />);
+
+    await openReportTab(user);
 
     // With today's default date filter, only D004 (repurchase, not new customer) shows.
     // Selecting "当期新客" should hide D004 since customerCreatedInPeriod is false.
@@ -152,6 +149,8 @@ describe('App', () => {
   it('uses filtered records inside the breakdown drawer', async () => {
     const user = userEvent.setup();
     render(<App />);
+
+    await openReportTab(user);
 
     // First widen date range: type a broad range into the picker inputs
     const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
@@ -190,6 +189,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await openReportTab(user);
     await user.click(screen.getAllByRole('button', { name: '业绩明细' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: '张敏 · 业绩明细' });
@@ -210,5 +210,33 @@ describe('App', () => {
     expect(within(drawer).getByRole('cell', { name: 'C003' })).toBeInTheDocument();
     expect(within(drawer).getByRole('cell', { name: '13800010003' })).toBeInTheDocument();
     expect(within(drawer).getByRole('cell', { name: '转介绍' })).toBeInTheDocument();
+  });
+
+  it('renders dashboard tab with ten total metric cards', () => {
+    render(<App />);
+
+    expect(screen.getByRole('tab', { name: '仪表盘' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '报表' })).toBeInTheDocument();
+    expect(screen.getByText('上报业绩')).toBeInTheDocument();
+    expect(screen.getByText('确认业绩')).toBeInTheDocument();
+    expect(screen.getByText('成交单量')).toBeInTheDocument();
+    expect(screen.getByText('成交客户数')).toBeInTheDocument();
+    expect(screen.getByText('新诊业绩')).toBeInTheDocument();
+    expect(screen.getByText('新诊单量')).toBeInTheDocument();
+    expect(screen.getByText('新诊客户数')).toBeInTheDocument();
+    expect(screen.getByText('复购业绩')).toBeInTheDocument();
+    expect(screen.getByText('复购单量')).toBeInTheDocument();
+    expect(screen.getByText('复购客户数')).toBeInTheDocument();
+  });
+
+  it('shows primary dimension only inside the report tab', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.queryByRole('combobox', { name: '主维度' })).not.toBeInTheDocument();
+
+    await openReportTab(user);
+
+    expect(screen.getByRole('combobox', { name: '主维度' })).toBeInTheDocument();
   });
 });

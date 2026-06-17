@@ -1,13 +1,19 @@
-import { Card } from 'antd';
+import { Card, Select, Space, Tabs } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import BreakdownDrawer from './components/BreakdownDrawer';
+import DashboardOverview from './components/DashboardOverview';
 import FilterBar from './components/FilterBar';
 import PerformanceDetailDrawer from './components/PerformanceDetailDrawer';
 import SummaryTable from './components/SummaryTable';
 import { mockDeals } from './data/mockDeals';
-import { buildSummaryRows, getDetailRecords, type SummaryRow } from './domain/analytics';
-import { getDimension, type DimensionKey } from './domain/dimensions';
+import {
+  buildDashboardSummary,
+  buildSummaryRows,
+  getDetailRecords,
+  type SummaryRow,
+} from './domain/analytics';
+import { dimensions, getDimension, type DimensionKey } from './domain/dimensions';
 import { filterDealRecords, type SalesDashboardFilters } from './domain/filters';
 
 const today = dayjs().format('YYYY-MM-DD');
@@ -34,6 +40,10 @@ export default function App() {
   const [selectedDetailRow, setSelectedDetailRow] = useState<SummaryRow | null>(null);
 
   const filteredRecords = useMemo(() => filterDealRecords(mockDeals, filters), [filters]);
+  const dashboardSummary = useMemo(
+    () => buildDashboardSummary(filteredRecords),
+    [filteredRecords],
+  );
   const primaryDimensionConfig = getDimension(primaryDimension);
   const summaryRows = useMemo(
     () => buildSummaryRows(filteredRecords, primaryDimension),
@@ -56,26 +66,59 @@ export default function App() {
         <FilterBar
           filters={filters}
           records={mockDeals}
-          primaryDimension={primaryDimension}
           onFiltersChange={(nextFilters) => {
             setFilters(nextFilters);
-            setSelectedBreakdownRow(null);
-            setSelectedDetailRow(null);
-          }}
-          onPrimaryDimensionChange={(dimension) => {
-            setPrimaryDimension(dimension);
             setSelectedBreakdownRow(null);
             setSelectedDetailRow(null);
           }}
         />
       </Card>
 
-      <Card title={`${primaryDimensionConfig.label}业绩汇总`}>
-        <SummaryTable
-          primaryDimension={primaryDimensionConfig}
-          rows={summaryRows}
-          onOpenBreakdown={setSelectedBreakdownRow}
-          onOpenDetails={setSelectedDetailRow}
+      <Card className="content-card">
+        <Tabs
+          defaultActiveKey="dashboard"
+          items={[
+            {
+              key: 'dashboard',
+              label: '仪表盘',
+              children: <DashboardOverview summary={dashboardSummary} />,
+            },
+            {
+              key: 'report',
+              label: '报表',
+              children: (
+                <>
+                  <div className="report-toolbar">
+                    <Space>
+                      <span className="report-toolbar-label">主维度</span>
+                      <Select
+                        value={primaryDimension}
+                        style={{ width: 140 }}
+                        placeholder="请选择主维度"
+                        aria-label="主维度"
+                        virtual={false}
+                        options={dimensions.map((dimension) => ({
+                          value: dimension.key,
+                          label: dimension.label,
+                        }))}
+                        onChange={(dimension) => {
+                          setPrimaryDimension(dimension);
+                          setSelectedBreakdownRow(null);
+                          setSelectedDetailRow(null);
+                        }}
+                      />
+                    </Space>
+                  </div>
+                  <SummaryTable
+                    primaryDimension={primaryDimensionConfig}
+                    rows={summaryRows}
+                    onOpenBreakdown={setSelectedBreakdownRow}
+                    onOpenDetails={setSelectedDetailRow}
+                  />
+                </>
+              ),
+            },
+          ]}
         />
       </Card>
 

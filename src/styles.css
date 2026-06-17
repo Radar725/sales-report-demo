@@ -23,3 +23,41 @@ body {
   background: #e8f0fe;
   font-weight: 600;
 }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.dashboard-metric-card .ant-card-body {
+  padding: 16px;
+}
+
+.dashboard-metric-label {
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.dashboard-metric-value {
+  color: #111827;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.content-card {
+  margin-top: 16px;
+}
+
+.report-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+
+.report-toolbar-label {
+  color: #374151;
+  font-weight: 500;
+}

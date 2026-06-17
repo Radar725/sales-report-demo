@@ -2,8 +2,6 @@ import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import type { DealRecord } from '../data/mockDeals';
-import type { DimensionKey } from '../domain/dimensions';
-import { dimensions } from '../domain/dimensions';
 import {
   buildTreeData,
   getFilterOptions,
@@ -15,9 +13,7 @@ import {
 type FilterBarProps = {
   filters: SalesDashboardFilters;
   records: DealRecord[];
-  primaryDimension: DimensionKey;
   onFiltersChange: (filters: SalesDashboardFilters) => void;
-  onPrimaryDimensionChange: (dimension: DimensionKey) => void;
 };
 
 const customerScopeOptions: Array<{ value: CustomerScopeFilter; label: string }> = [
@@ -71,16 +67,13 @@ const defaultFiltersReset: SalesDashboardFilters = {
 export default function FilterBar({
   filters,
   records,
-  primaryDimension,
   onFiltersChange,
-  onPrimaryDimensionChange,
 }: FilterBarProps) {
   // --- local filter state (committed to parent on "查询") ---
   const [localFilters, setLocalFilters] = useState<SalesDashboardFilters>(() => ({
     ...defaultFiltersReset,
     ...filters,
   }));
-  const [localPrimaryDimension, setLocalPrimaryDimension] = useState<DimensionKey>(primaryDimension);
   const [expanded, setExpanded] = useState(false);
 
   // Sync from parent when effective filters change externally
@@ -91,10 +84,6 @@ export default function FilterBar({
     });
   }, [filters]);
 
-  useEffect(() => {
-    setLocalPrimaryDimension(primaryDimension);
-  }, [primaryDimension]);
-
   const treeData = useMemo(() => buildTreeData(records), [records]);
   const customerPoolOptions = useMemo(
     () => getFilterOptions(records).customerPools,
@@ -103,15 +92,12 @@ export default function FilterBar({
 
   function handleQuery() {
     onFiltersChange(localFilters);
-    onPrimaryDimensionChange(localPrimaryDimension);
   }
 
   function handleReset() {
     const reset = { ...defaultFiltersReset };
     setLocalFilters(reset);
-    setLocalPrimaryDimension('consultant');
     onFiltersChange(reset);
-    onPrimaryDimensionChange('consultant');
   }
 
   function getParentValues(tree: TreeDataNode[]): Set<string> {
@@ -136,17 +122,6 @@ export default function FilterBar({
                 dateStrings[0] && dateStrings[1] ? [dateStrings[0], dateStrings[1]] : null,
             }));
           }}
-        />
-      </Form.Item>
-      <Form.Item label="主维度">
-        <Select
-          value={localPrimaryDimension}
-          style={{ width: 140 }}
-          placeholder="请选择主维度"
-          aria-label="主维度"
-          virtual={false}
-          options={dimensions.map((d) => ({ value: d.key, label: d.label }))}
-          onChange={setLocalPrimaryDimension}
         />
       </Form.Item>
       <Form.Item label="客户统计范围">
