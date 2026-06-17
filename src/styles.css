@@ -18,13 +18,6 @@ body {
   row-gap: 12px;
 }
 
-.filter-bar-more {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0;
-  width: 100%;
-}
-
 /* Grouped metric table — parent group headers get a distinct tint */
 .ant-table-thead th[colspan] {
   background: #e8f0fe;
