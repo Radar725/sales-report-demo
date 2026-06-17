@@ -27,7 +27,7 @@ export default function SummaryTable({ primaryDimension, rows, onOpenBreakdown }
       width: 120,
       render: (_, row) => (
         <Button type="link" onClick={() => onOpenBreakdown(row)}>
-          查看拆解
+          业绩拆解
         </Button>
       ),
     },

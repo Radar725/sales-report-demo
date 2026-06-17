@@ -26,7 +26,7 @@ export default function BreakdownDrawer({
   return (
     <Drawer
       title={row ? `${row.primaryDimensionValue} · 业绩拆解` : '业绩拆解'}
-      width={960}
+      width={1400}
       open={open}
       onClose={onClose}
       extra={<Button>导出当前拆解</Button>}

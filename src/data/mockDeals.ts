@@ -12,6 +12,7 @@ export type DealRecord = Record<RecordDimensionKey, string> & {
   createdCustomerCountInPeriod: number;
   historicalRepurchaseCustomerCount: number;
   historicalRepurchaseAmount: number;
+  customerPool: string;
   dealDate: string;
   dealStatus: '已成交';
 };
@@ -33,6 +34,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
+    customerPool: '高客单价池',
     dealDate: '2026-06-02',
     dealStatus: '已成交',
     projectCategory: '高端咨询',
@@ -54,6 +56,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
+    customerPool: '高客单价池',
     dealDate: '2026-06-06',
     dealStatus: '已成交',
     projectCategory: '高端咨询',
@@ -75,6 +78,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
+    customerPool: '普通客户池',
     dealDate: '2026-06-11',
     dealStatus: '已成交',
     projectCategory: '专项服务',
@@ -96,6 +100,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
+    customerPool: '复购客户池',
     dealDate: '2026-06-17',
     dealStatus: '已成交',
     projectCategory: '复购服务',
@@ -117,6 +122,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
+    customerPool: '复购客户池',
     dealDate: '2026-06-20',
     dealStatus: '已成交',
     projectCategory: '复购服务',
@@ -138,6 +144,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
+    customerPool: '高客单价池',
     dealDate: '2026-06-05',
     dealStatus: '已成交',
     projectCategory: '高端咨询',
@@ -159,6 +166,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
+    customerPool: '普通客户池',
     dealDate: '2026-06-09',
     dealStatus: '已成交',
     projectCategory: '专项服务',
@@ -180,6 +188,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
+    customerPool: '复购客户池',
     dealDate: '2026-06-13',
     dealStatus: '已成交',
     projectCategory: '复购服务',
@@ -201,6 +210,7 @@ export const mockDeals: DealRecord[] = [
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
+    customerPool: '普通客户池',
     dealDate: '2026-06-22',
     dealStatus: '已成交',
     projectCategory: '专项服务',

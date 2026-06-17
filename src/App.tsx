@@ -21,6 +21,7 @@ const defaultFilters: SalesDashboardFilters = {
   projectCategories: [],
   projects: [],
   customerScope: 'all',
+  customerPools: [],
   cities: [],
   institutions: [],
 };
