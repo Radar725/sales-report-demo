@@ -35,6 +35,79 @@ function getRecordDimensionValue(record: DealRecord, dimension: DimensionKey) {
   return dimension === 'date' ? record.dealDate : record[dimension];
 }
 
+function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
+  const customerIds = new Set(groupRecords.map((record) => record.customerId));
+  const newDiagnosisRecords = groupRecords.filter((record) => record.dealType === '新诊');
+  const repurchaseRecords = groupRecords.filter((record) => record.dealType === '复购');
+  const newCustomerRecords = groupRecords.filter((record) => record.customerCreatedInPeriod);
+
+  const reportedAmount = groupRecords.reduce((sum, record) => sum + record.reportedAmount, 0);
+  const confirmedAmount = groupRecords.reduce((sum, record) => sum + record.confirmedAmount, 0);
+  const dealCount = groupRecords.length;
+  const customerCount = customerIds.size;
+  const newDiagnosisAmount = newDiagnosisRecords.reduce(
+    (sum, record) => sum + record.reportedAmount,
+    0,
+  );
+  const repurchaseAmount = repurchaseRecords.reduce(
+    (sum, record) => sum + record.reportedAmount,
+    0,
+  );
+  const newDiagnosisCustomerCount = new Set(
+    newDiagnosisRecords.map((record) => record.customerId),
+  ).size;
+  const repurchaseCustomerCount = new Set(
+    repurchaseRecords.map((record) => record.customerId),
+  ).size;
+  const newCustomerCount = new Set(newCustomerRecords.map((record) => record.customerId)).size;
+  const newCustomerAmount = newCustomerRecords.reduce(
+    (sum, record) => sum + record.reportedAmount,
+    0,
+  );
+  const createdCustomerCountInPeriod =
+    groupRecords.length === 0
+      ? 0
+      : Math.max(...groupRecords.map((record) => record.createdCustomerCountInPeriod));
+  const historicalRepurchaseCustomerCount =
+    groupRecords.length === 0
+      ? 0
+      : Math.max(...groupRecords.map((record) => record.historicalRepurchaseCustomerCount));
+  const historicalRepurchaseAmount =
+    groupRecords.length === 0
+      ? 0
+      : Math.max(...groupRecords.map((record) => record.historicalRepurchaseAmount));
+
+  return {
+    reportedAmount,
+    confirmedAmount,
+    dealCount,
+    customerCount,
+    averageDealAmount: safeDivide(reportedAmount, dealCount),
+    newDiagnosisAmount,
+    newDiagnosisDealCount: newDiagnosisRecords.length,
+    newDiagnosisCustomerCount,
+    newDiagnosisDealCountRate: safeDivide(newDiagnosisRecords.length, dealCount),
+    newDiagnosisCustomerRate: safeDivide(newDiagnosisCustomerCount, customerCount),
+    newDiagnosisAmountRate: safeDivide(newDiagnosisAmount, reportedAmount),
+    repurchaseAmount,
+    repurchaseDealCount: repurchaseRecords.length,
+    repurchaseCustomerCount,
+    repurchaseDealCountRate: safeDivide(repurchaseRecords.length, dealCount),
+    repurchaseCustomerRate: safeDivide(repurchaseCustomerCount, customerCount),
+    repurchaseAmountRate: safeDivide(repurchaseAmount, reportedAmount),
+    newCustomerConversionRate: safeDivide(newCustomerCount, createdCustomerCountInPeriod),
+    newCustomerAmountContributionRate: safeDivide(newCustomerAmount, reportedAmount),
+    historicalRepurchaseCustomerContributionRate: safeDivide(
+      repurchaseCustomerCount,
+      historicalRepurchaseCustomerCount,
+    ),
+    historicalRepurchaseAmountContributionRate: safeDivide(
+      repurchaseAmount,
+      historicalRepurchaseAmount,
+    ),
+  };
+}
+
 function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSummary[] {
   const groups = new Map<string, DealRecord[]>();
 
@@ -46,76 +119,10 @@ function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSum
   }
 
   return [...groups.entries()]
-    .map(([value, groupRecords]) => {
-      const customerIds = new Set(groupRecords.map((record) => record.customerId));
-      const newDiagnosisRecords = groupRecords.filter((record) => record.dealType === '新诊');
-      const repurchaseRecords = groupRecords.filter((record) => record.dealType === '复购');
-      const newCustomerRecords = groupRecords.filter((record) => record.customerCreatedInPeriod);
-
-      const reportedAmount = groupRecords.reduce((sum, record) => sum + record.reportedAmount, 0);
-      const confirmedAmount = groupRecords.reduce((sum, record) => sum + record.confirmedAmount, 0);
-      const dealCount = groupRecords.length;
-      const customerCount = customerIds.size;
-      const newDiagnosisAmount = newDiagnosisRecords.reduce(
-        (sum, record) => sum + record.reportedAmount,
-        0,
-      );
-      const repurchaseAmount = repurchaseRecords.reduce(
-        (sum, record) => sum + record.reportedAmount,
-        0,
-      );
-      const newDiagnosisCustomerCount = new Set(
-        newDiagnosisRecords.map((record) => record.customerId),
-      ).size;
-      const repurchaseCustomerCount = new Set(
-        repurchaseRecords.map((record) => record.customerId),
-      ).size;
-      const newCustomerCount = new Set(newCustomerRecords.map((record) => record.customerId)).size;
-      const newCustomerAmount = newCustomerRecords.reduce(
-        (sum, record) => sum + record.reportedAmount,
-        0,
-      );
-      const createdCustomerCountInPeriod = Math.max(
-        ...groupRecords.map((record) => record.createdCustomerCountInPeriod),
-      );
-      const historicalRepurchaseCustomerCount = Math.max(
-        ...groupRecords.map((record) => record.historicalRepurchaseCustomerCount),
-      );
-      const historicalRepurchaseAmount = Math.max(
-        ...groupRecords.map((record) => record.historicalRepurchaseAmount),
-      );
-
-      return {
-        value,
-        reportedAmount,
-        confirmedAmount,
-        dealCount,
-        customerCount,
-        averageDealAmount: safeDivide(reportedAmount, dealCount),
-        newDiagnosisAmount,
-        newDiagnosisDealCount: newDiagnosisRecords.length,
-        newDiagnosisCustomerCount,
-        newDiagnosisDealCountRate: safeDivide(newDiagnosisRecords.length, dealCount),
-        newDiagnosisCustomerRate: safeDivide(newDiagnosisCustomerCount, customerCount),
-        newDiagnosisAmountRate: safeDivide(newDiagnosisAmount, reportedAmount),
-        repurchaseAmount,
-        repurchaseDealCount: repurchaseRecords.length,
-        repurchaseCustomerCount,
-        repurchaseDealCountRate: safeDivide(repurchaseRecords.length, dealCount),
-        repurchaseCustomerRate: safeDivide(repurchaseCustomerCount, customerCount),
-        repurchaseAmountRate: safeDivide(repurchaseAmount, reportedAmount),
-        newCustomerConversionRate: safeDivide(newCustomerCount, createdCustomerCountInPeriod),
-        newCustomerAmountContributionRate: safeDivide(newCustomerAmount, reportedAmount),
-        historicalRepurchaseCustomerContributionRate: safeDivide(
-          repurchaseCustomerCount,
-          historicalRepurchaseCustomerCount,
-        ),
-        historicalRepurchaseAmountContributionRate: safeDivide(
-          repurchaseAmount,
-          historicalRepurchaseAmount,
-        ),
-      };
-    })
+    .map(([value, groupRecords]) => ({
+      value,
+      ...calculateMetrics(groupRecords),
+    }))
     .sort((left, right) => {
       if (dimension === 'date') {
         return left.value.localeCompare(right.value);
@@ -130,6 +137,10 @@ export function buildSummaryRows(records: DealRecord[], primaryDimension: Dimens
     primaryDimensionValue: row.value,
     ...(({ value: _value, ...metrics }) => metrics)(row),
   }));
+}
+
+export function buildDashboardSummary(records: DealRecord[]): MetricValue {
+  return calculateMetrics(records);
 }
 
 export function buildBreakdownRows(records: DealRecord[], query: BreakdownQuery): BreakdownRow[] {
