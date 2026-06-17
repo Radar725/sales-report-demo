@@ -17,3 +17,9 @@ body {
 .filter-bar {
   row-gap: 12px;
 }
+
+/* Grouped metric table — parent group headers get a distinct tint */
+.ant-table-thead th[colspan] {
+  background: #e8f0fe;
+  font-weight: 600;
+}

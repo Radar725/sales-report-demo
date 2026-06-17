@@ -2,7 +2,7 @@ import { Button, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Dimension } from '../domain/dimensions';
 import type { SummaryRow } from '../domain/analytics';
-import { formatAmount } from '../domain/metrics';
+import { buildMetricColumns } from '../domain/metrics';
 
 type SummaryTableProps = {
   primaryDimension: Dimension;
@@ -16,25 +16,14 @@ export default function SummaryTable({ primaryDimension, rows, onOpenBreakdown }
       title: primaryDimension.label,
       dataIndex: 'primaryDimensionValue',
       key: 'primaryDimensionValue',
+      fixed: 'left',
+      width: 120,
     },
-    {
-      title: '成交客户数',
-      dataIndex: 'customerCount',
-      key: 'customerCount',
-      align: 'right',
-      sorter: (left, right) => left.customerCount - right.customerCount,
-    },
-    {
-      title: '成交总金额',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
-      align: 'right',
-      sorter: (left, right) => left.totalAmount - right.totalAmount,
-      render: (value: number) => formatAmount(value),
-    },
+    ...buildMetricColumns<SummaryRow>(),
     {
       title: '操作',
       key: 'actions',
+      fixed: 'right',
       width: 120,
       render: (_, row) => (
         <Button type="link" onClick={() => onOpenBreakdown(row)}>
@@ -44,5 +33,14 @@ export default function SummaryTable({ primaryDimension, rows, onOpenBreakdown }
     },
   ];
 
-  return <Table rowKey="key" columns={columns} dataSource={rows} pagination={false} />;
+  return (
+    <Table
+      rowKey="key"
+      columns={columns}
+      dataSource={rows}
+      pagination={false}
+      bordered
+      scroll={{ x: 2800 }}
+    />
+  );
 }

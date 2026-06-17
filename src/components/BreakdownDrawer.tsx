@@ -3,7 +3,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { mockDeals } from '../data/mockDeals';
 import { buildBreakdownRows, type BreakdownRow, type SummaryRow } from '../domain/analytics';
 import { type DimensionKey, getBreakdownDimensions, getDimension } from '../domain/dimensions';
-import { formatAmount } from '../domain/metrics';
+import { buildMetricColumns } from '../domain/metrics';
 
 type BreakdownDrawerProps = {
   open: boolean;
@@ -12,29 +12,6 @@ type BreakdownDrawerProps = {
   onClose: () => void;
 };
 
-const columns: ColumnsType<BreakdownRow> = [
-  {
-    title: '拆解维度',
-    dataIndex: 'breakdownDimensionValue',
-    key: 'breakdownDimensionValue',
-  },
-  {
-    title: '成交客户数',
-    dataIndex: 'customerCount',
-    key: 'customerCount',
-    align: 'right',
-    sorter: (left, right) => left.customerCount - right.customerCount,
-  },
-  {
-    title: '成交总金额',
-    dataIndex: 'totalAmount',
-    key: 'totalAmount',
-    align: 'right',
-    sorter: (left, right) => left.totalAmount - right.totalAmount,
-    render: (value: number) => formatAmount(value),
-  },
-];
-
 export default function BreakdownDrawer({ open, primaryDimension, row, onClose }: BreakdownDrawerProps) {
   const primaryDimensionConfig = getDimension(primaryDimension);
   const breakdownDimensions = getBreakdownDimensions(primaryDimension);
@@ -42,7 +19,7 @@ export default function BreakdownDrawer({ open, primaryDimension, row, onClose }
   return (
     <Drawer
       title={row ? `${row.primaryDimensionValue} · 业绩拆解` : '业绩拆解'}
-      width={720}
+      width={960}
       open={open}
       onClose={onClose}
       extra={<Button>导出当前拆解</Button>}
@@ -55,6 +32,16 @@ export default function BreakdownDrawer({ open, primaryDimension, row, onClose }
               primaryDimensionValue: row.primaryDimensionValue,
               breakdownDimension: breakdownDimension.key,
             });
+            const columns: ColumnsType<BreakdownRow> = [
+              {
+                title: breakdownDimension.label,
+                dataIndex: 'breakdownDimensionValue',
+                key: 'breakdownDimensionValue',
+                fixed: 'left',
+                width: 140,
+              },
+              ...buildMetricColumns<BreakdownRow>(),
+            ];
 
             return {
               key: breakdownDimension.key,
@@ -67,16 +54,11 @@ export default function BreakdownDrawer({ open, primaryDimension, row, onClose }
                   </div>
                   <Table
                     rowKey="key"
-                    columns={[
-                      {
-                        ...columns[0],
-                        title: breakdownDimension.label,
-                      },
-                      columns[1],
-                      columns[2],
-                    ]}
+                    columns={columns}
                     dataSource={dataSource}
                     pagination={false}
+                    bordered
+                    scroll={{ x: 2800 }}
                   />
                 </Space>
               ),
