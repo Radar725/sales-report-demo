@@ -154,18 +154,19 @@ export function buildMetricColumns<T extends MetricValue>(): ColumnsType<T> {
           <Popover content={metric.description}>
             <span
               style={{
-                marginLeft: 4,
+                marginLeft: 2,
                 color: '#999',
                 cursor: 'help',
                 border: '1px solid #999',
                 borderRadius: '50%',
-                width: 14,
-                height: 14,
+                width: 12,
+                height: 12,
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 10,
+                fontSize: 9,
                 lineHeight: 1,
+                flexShrink: 0,
               }}
             >
               ?
