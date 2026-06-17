@@ -24,6 +24,8 @@ export default function FilterBar({ primaryDimension, onPrimaryDimensionChange }
         <Select
           value={primaryDimension}
           style={{ width: 140 }}
+          aria-label="主维度"
+          virtual={false}
           options={dimensions.map((dimension) => ({
             value: dimension.key,
             label: dimension.label,
