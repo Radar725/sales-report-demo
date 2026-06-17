@@ -26,11 +26,15 @@ function safeDivide(numerator: number, denominator: number) {
   return denominator === 0 ? 0 : numerator / denominator;
 }
 
+function getRecordDimensionValue(record: DealRecord, dimension: DimensionKey) {
+  return dimension === 'date' ? record.dealDate : record[dimension];
+}
+
 function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSummary[] {
   const groups = new Map<string, DealRecord[]>();
 
   for (const record of records) {
-    const value = record[dimension];
+    const value = getRecordDimensionValue(record, dimension);
     const current = groups.get(value) ?? [];
     current.push(record);
     groups.set(value, current);
@@ -120,7 +124,7 @@ export function buildSummaryRows(records: DealRecord[], primaryDimension: Dimens
 
 export function buildBreakdownRows(records: DealRecord[], query: BreakdownQuery): BreakdownRow[] {
   const scopedRecords = records.filter(
-    (record) => record[query.primaryDimension] === query.primaryDimensionValue,
+    (record) => getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue,
   );
 
   return aggregate(scopedRecords, query.breakdownDimension).map((row) => ({

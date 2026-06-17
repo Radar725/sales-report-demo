@@ -1,8 +1,8 @@
-import type { DimensionKey } from '../domain/dimensions';
+import type { RecordDimensionKey } from '../domain/dimensions';
 
 export type DealType = '新诊' | '复购';
 
-export type DealRecord = Record<DimensionKey, string> & {
+export type DealRecord = Record<RecordDimensionKey, string> & {
   id: string;
   customerId: string;
   reportedAmount: number;
@@ -35,6 +35,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 4000000,
     dealDate: '2026-06-02',
     dealStatus: '已成交',
+    projectCategory: '高端咨询',
+    project: '年度管理咨询包',
   },
   {
     id: 'D002',
@@ -54,6 +56,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 4000000,
     dealDate: '2026-06-06',
     dealStatus: '已成交',
+    projectCategory: '高端咨询',
+    project: '年度管理咨询包',
   },
   {
     id: 'D003',
@@ -73,6 +77,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 4000000,
     dealDate: '2026-06-11',
     dealStatus: '已成交',
+    projectCategory: '专项服务',
+    project: '私域增长诊断',
   },
   {
     id: 'D004',
@@ -92,6 +98,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 4000000,
     dealDate: '2026-06-17',
     dealStatus: '已成交',
+    projectCategory: '复购服务',
+    project: '客户复购提升包',
   },
   {
     id: 'D005',
@@ -111,6 +119,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 4000000,
     dealDate: '2026-06-20',
     dealStatus: '已成交',
+    projectCategory: '复购服务',
+    project: '客户复购提升包',
   },
   {
     id: 'D006',
@@ -130,6 +140,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 3000000,
     dealDate: '2026-06-05',
     dealStatus: '已成交',
+    projectCategory: '高端咨询',
+    project: '年度管理咨询包',
   },
   {
     id: 'D007',
@@ -149,6 +161,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 3000000,
     dealDate: '2026-06-09',
     dealStatus: '已成交',
+    projectCategory: '专项服务',
+    project: '私域增长诊断',
   },
   {
     id: 'D008',
@@ -168,6 +182,8 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 3000000,
     dealDate: '2026-06-13',
     dealStatus: '已成交',
+    projectCategory: '复购服务',
+    project: '客户复购提升包',
   },
   {
     id: 'D009',
@@ -187,5 +203,7 @@ export const mockDeals: DealRecord[] = [
     historicalRepurchaseAmount: 3000000,
     dealDate: '2026-06-22',
     dealStatus: '已成交',
+    projectCategory: '专项服务',
+    project: '自然流量优化',
   },
 ];

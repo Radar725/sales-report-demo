@@ -53,4 +53,45 @@ describe('sales analytics aggregation', () => {
       repurchaseDealCountRate: 0,
     });
   });
+
+  it('builds summary rows by date using dealDate', () => {
+    const rows = buildSummaryRows(mockDeals, 'date');
+
+    expect(rows.map((row) => row.primaryDimensionValue)).toContain('2026-06-02');
+    expect(rows.find((row) => row.primaryDimensionValue === '2026-06-02')).toMatchObject({
+      reportedAmount: 450000,
+      confirmedAmount: 412000,
+      dealCount: 1,
+    });
+  });
+
+  it('builds summary rows by project category and project', () => {
+    const categoryRows = buildSummaryRows(mockDeals, 'projectCategory');
+    const projectRows = buildSummaryRows(mockDeals, 'project');
+
+    expect(categoryRows.find((row) => row.primaryDimensionValue === '高端咨询')).toMatchObject({
+      reportedAmount: 1600000,
+      dealCount: 3,
+    });
+    expect(projectRows.find((row) => row.primaryDimensionValue === '私域增长诊断')).toMatchObject({
+      reportedAmount: 830000,
+      dealCount: 2,
+    });
+  });
+
+  it('builds breakdown rows for project category to project', () => {
+    const rows = buildBreakdownRows(mockDeals, {
+      primaryDimension: 'projectCategory',
+      primaryDimensionValue: '复购服务',
+      breakdownDimension: 'project',
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      key: 'project:客户复购提升包',
+      breakdownDimensionValue: '客户复购提升包',
+      reportedAmount: 650000,
+      dealCount: 3,
+    });
+  });
 });
