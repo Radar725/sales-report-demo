@@ -125,7 +125,7 @@ export const metricGroups: MetricGroup[] = [
 ];
 
 export function formatAmount(value: number) {
-  return `${(value / 10000).toFixed(1)}万`;
+  return `¥${value}`;
 }
 
 export function formatPercent(value: number) {
@@ -149,7 +149,7 @@ export function buildMetricColumns<T extends MetricValue>(): ColumnsType<T> {
     title: group.title,
     children: group.metrics.map((metric) => ({
       title: metric.description ? (
-        <span>
+        <span style={{ whiteSpace: 'nowrap' }}>
           {metric.label}
           <Popover content={metric.description}>
             <span
