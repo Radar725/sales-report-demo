@@ -114,28 +114,33 @@ describe('App', () => {
   it('filters the summary table by customer statistical scope', async () => {
     render(<App />);
 
-    // Verify initial unfiltered consultant total is visible
-    expect(screen.getByRole('cell', { name: '180.0万' })).toBeInTheDocument();
-
-    // Open customer scope dropdown via mousedown (Ant Design uses mousedown internally)
+    // With today's default date filter, only D004 (repurchase, not new customer) shows.
+    // Selecting "当期新客" should hide D004 since customerCreatedInPeriod is false.
     const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
     const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
     fireEvent.mouseDown(selector);
+    fireEvent.click(await screen.findByText('当期新客'));
 
-    // Select "当期新客" from dropdown
-    const option = await screen.findByText('当期新客');
-    fireEvent.click(option);
-
-    // After filtering by customerCreatedInPeriod, 张敏's total changes from 180.0万 → 125.0万
+    // After filtering, the table should be empty (no record is both today AND a new customer)
     await waitFor(() => {
-      expect(screen.queryByRole('cell', { name: '180.0万' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('cell', { name: '20.0万' })).not.toBeInTheDocument();
     });
   });
 
   it('uses filtered records inside the breakdown drawer', async () => {
+    const user = userEvent.setup();
     render(<App />);
 
-    // Apply customer scope filter first
+    // First widen date range: type a broad range into the picker inputs
+    const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
+    await user.clear(inputs[0]);
+    await user.type(inputs[0], '2026-06-01');
+    await user.clear(inputs[1]);
+    await user.type(inputs[1], '2026-06-30');
+    // Trigger blur to commit the change
+    fireEvent.blur(inputs[1]);
+
+    // Now apply customer scope filter
     const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
     const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
     fireEvent.mouseDown(selector);
@@ -147,7 +152,6 @@ describe('App', () => {
       expect(screen.queryByRole('cell', { name: '180.0万' })).not.toBeInTheDocument();
     });
 
-    const user = userEvent.setup();
     // Open breakdown drawer — first row should now be 张敏 with filtered data
     await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
 

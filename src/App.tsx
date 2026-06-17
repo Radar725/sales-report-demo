@@ -1,4 +1,5 @@
 import { Card, Typography } from 'antd';
+import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import BreakdownDrawer from './components/BreakdownDrawer';
 import FilterBar from './components/FilterBar';
@@ -8,8 +9,10 @@ import { buildSummaryRows, type SummaryRow } from './domain/analytics';
 import { getDimension, type DimensionKey } from './domain/dimensions';
 import { filterDealRecords, type SalesDashboardFilters } from './domain/filters';
 
+const today = dayjs().format('YYYY-MM-DD');
+
 const defaultFilters: SalesDashboardFilters = {
-  dateRange: null,
+  dateRange: [today, today],
   departments: [],
   consultants: [],
   dealType: 'all',
