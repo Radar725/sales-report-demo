@@ -44,6 +44,12 @@ describe('App', () => {
 
     await user.click(screen.getByRole('combobox', { name: '主维度' }));
     await user.click(await screen.findByRole('option', { name: '部门' }));
+    // Click 查询 to apply the toolbar primary dimension
+    await user.click(
+      within(document.querySelector('.filter-bar') as HTMLElement).getByRole('button', {
+        name: '查 询',
+      }),
+    );
     await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -66,6 +72,12 @@ describe('App', () => {
 
     await user.click(screen.getByRole('combobox', { name: '主维度' }));
     await user.click(await screen.findByRole('option', { name: '项目分类' }));
+    // Click 查询 to apply the toolbar primary dimension
+    await user.click(
+      within(document.querySelector('.filter-bar') as HTMLElement).getByRole('button', {
+        name: '查 询',
+      }),
+    );
     await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -78,7 +90,7 @@ describe('App', () => {
     expect(screen.getByText('统计时间')).toBeInTheDocument();
     expect(screen.getByText('主维度')).toBeInTheDocument();
     expect(screen.getByText('客户统计范围')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '更多筛选' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '全部筛选' })).toBeInTheDocument();
     expect(screen.queryByText('业绩状态')).not.toBeInTheDocument();
   });
 
@@ -86,18 +98,25 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '更多筛选' }));
+    await user.click(screen.getByRole('button', { name: '全部筛选' }));
 
-    const modal = screen.getByRole('dialog', { name: '更多筛选' });
-    expect(within(modal).getByText('部门')).toBeInTheDocument();
-    expect(within(modal).getByText('咨询师')).toBeInTheDocument();
-    expect(within(modal).getByText('成交类型')).toBeInTheDocument();
-    expect(within(modal).getByText('渠道分类')).toBeInTheDocument();
-    expect(within(modal).getByText('渠道')).toBeInTheDocument();
-    expect(within(modal).getByText('项目分类')).toBeInTheDocument();
-    expect(within(modal).getByText('项目')).toBeInTheDocument();
-    expect(within(modal).getByText('城市')).toBeInTheDocument();
-    expect(within(modal).getByText('机构')).toBeInTheDocument();
+    const modal = screen.getByRole('dialog', { name: '全部筛选' });
+    // All 12 filters are shown in a 3-column grid
+    const gridLabels = modal.querySelectorAll('.filter-grid-label');
+    const labelTexts = Array.from(gridLabels).map((el) => el.textContent?.trim());
+    expect(labelTexts).toEqual(
+      expect.arrayContaining([
+        '统计时间',
+        '主维度',
+        '客户统计范围',
+        '咨询师',
+        '渠道',
+        '项目',
+        '城市&机构',
+        '客户池',
+        '成交类型',
+      ]),
+    );
   });
 
   it('does not allow project to break down by project category', async () => {
@@ -106,6 +125,12 @@ describe('App', () => {
 
     await user.click(screen.getByRole('combobox', { name: '主维度' }));
     await user.click(await screen.findByRole('option', { name: '项目' }));
+    // Click 查询 to apply the toolbar primary dimension
+    await user.click(
+      within(document.querySelector('.filter-bar') as HTMLElement).getByRole('button', {
+        name: '查 询',
+      }),
+    );
     await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -113,6 +138,7 @@ describe('App', () => {
   });
 
   it('filters the summary table by customer statistical scope', async () => {
+    const user = userEvent.setup();
     render(<App />);
 
     // With today's default date filter, only D004 (repurchase, not new customer) shows.
@@ -121,6 +147,10 @@ describe('App', () => {
     const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
     fireEvent.mouseDown(selector);
     fireEvent.click(await screen.findByText('当期新客'));
+
+    // Click 查询 in the toolbar to apply the filter
+    const filterBar = document.querySelector('.filter-bar')!;
+    await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));
 
     // After filtering, the table should be empty (no record is both today AND a new customer)
     await waitFor(() => {
@@ -138,8 +168,6 @@ describe('App', () => {
     await user.type(inputs[0], '2026-06-01');
     await user.clear(inputs[1]);
     await user.type(inputs[1], '2026-06-30');
-    // Trigger blur to commit the change
-    fireEvent.blur(inputs[1]);
 
     // Now apply customer scope filter
     const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
@@ -148,6 +176,10 @@ describe('App', () => {
 
     const option = await screen.findByText('当期新客');
     fireEvent.click(option);
+
+    // Click 查询 in the toolbar to apply the filters
+    const filterBar2 = document.querySelector('.filter-bar')!;
+    await user.click(within(filterBar2 as HTMLElement).getByRole('button', { name: '查 询' }));
 
     await waitFor(() => {
       expect(screen.queryByRole('cell', { name: '180.0万' })).not.toBeInTheDocument();
