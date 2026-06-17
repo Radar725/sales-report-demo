@@ -72,31 +72,32 @@ describe('App', () => {
     expect(within(drawer).getByRole('tab', { name: '项目' })).toBeInTheDocument();
   });
 
-  it('renders the approved sales-manager filters and removes performance status', () => {
+  it('renders the toolbar-visible filters and removes performance status', () => {
     render(<App />);
 
-    // Use getAllByText for labels that also appear as table headers
-    expect(screen.getAllByText('统计时间').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('部门').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('咨询师').length).toBeGreaterThan(0);
-    expect(screen.getByText('成交类型')).toBeInTheDocument();
-    expect(screen.getByText('渠道分类')).toBeInTheDocument();
-    expect(screen.getByText('项目分类')).toBeInTheDocument();
-    expect(screen.getByText('客户统计范围')).toBeInTheDocument();
+    expect(screen.getByText('统计时间')).toBeInTheDocument();
     expect(screen.getByText('主维度')).toBeInTheDocument();
+    expect(screen.getByText('客户统计范围')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '更多筛选' })).toBeInTheDocument();
     expect(screen.queryByText('业绩状态')).not.toBeInTheDocument();
   });
 
-  it('shows detailed filters after expanding more filters', async () => {
+  it('shows detailed filters in Modal after clicking more filters', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: '更多筛选' }));
 
-    expect(screen.getByText('渠道')).toBeInTheDocument();
-    expect(screen.getByText('项目')).toBeInTheDocument();
-    expect(screen.getByText('城市')).toBeInTheDocument();
-    expect(screen.getByText('机构')).toBeInTheDocument();
+    const modal = screen.getByRole('dialog', { name: '更多筛选' });
+    expect(within(modal).getByText('部门')).toBeInTheDocument();
+    expect(within(modal).getByText('咨询师')).toBeInTheDocument();
+    expect(within(modal).getByText('成交类型')).toBeInTheDocument();
+    expect(within(modal).getByText('渠道分类')).toBeInTheDocument();
+    expect(within(modal).getByText('渠道')).toBeInTheDocument();
+    expect(within(modal).getByText('项目分类')).toBeInTheDocument();
+    expect(within(modal).getByText('项目')).toBeInTheDocument();
+    expect(within(modal).getByText('城市')).toBeInTheDocument();
+    expect(within(modal).getByText('机构')).toBeInTheDocument();
   });
 
   it('does not allow project to break down by project category', async () => {
