@@ -274,7 +274,8 @@ export default function FilterBar({
               查询
             </Button>
             <Button onClick={handleReset}>重置</Button>
-            <Button>导出汇总</Button>
+            <Button type="primary">导出汇总数据</Button>
+            <Button type="primary">导出明细数据</Button>
           </Space>
           <Button
             type="link"
@@ -291,7 +292,8 @@ export default function FilterBar({
               查询
             </Button>
             <Button onClick={handleReset}>重置</Button>
-            <Button>导出汇总</Button>
+            <Button type="primary">导出汇总数据</Button>
+            <Button type="primary">导出明细数据</Button>
           </Space>
           <Button
             type="link"

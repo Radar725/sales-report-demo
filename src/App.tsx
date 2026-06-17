@@ -1,4 +1,4 @@
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import BreakdownDrawer from './components/BreakdownDrawer';
@@ -52,11 +52,6 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <Typography.Title level={2}>CRM 业绩统计 Demo</Typography.Title>
-      <Typography.Paragraph type="secondary">
-        主维度汇总列表 + 抽屉多维拆解，基于 Ant Design 5.0 常规组件。
-      </Typography.Paragraph>
-
       <Card className="toolbar-card">
         <FilterBar
           filters={filters}

@@ -192,7 +192,7 @@ describe('App', () => {
 
     await user.click(screen.getAllByRole('button', { name: '业绩明细' })[0]);
 
-    const drawer = screen.getByRole('dialog', { name: '咨询师「张敏」· 业绩明细' });
+    const drawer = screen.getByRole('dialog', { name: '张敏 · 业绩明细' });
     expect(within(drawer).getByRole('columnheader', { name: '成交金额' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '合作比例' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '合作业绩' })).toBeInTheDocument();
@@ -203,7 +203,7 @@ describe('App', () => {
     expect(within(drawer).getByRole('columnheader', { name: '客户ID' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '电话' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '成交项目' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('columnheader', { name: '成交状态' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '业绩确认状态' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '成交机构' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '成交日期' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '上报时间' })).toBeInTheDocument();

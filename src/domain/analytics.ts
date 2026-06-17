@@ -149,3 +149,18 @@ export function getDetailRecords(records: DealRecord[], query: DetailQuery) {
     (record) => getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue,
   );
 }
+
+type BreakdownDetailQuery = {
+  primaryDimension: DimensionKey;
+  primaryDimensionValue: string;
+  breakdownDimension: DimensionKey;
+  breakdownDimensionValue: string;
+};
+
+export function getBreakdownDetailRecords(records: DealRecord[], query: BreakdownDetailQuery) {
+  return records.filter(
+    (record) =>
+      getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue &&
+      getRecordDimensionValue(record, query.breakdownDimension) === query.breakdownDimensionValue,
+  );
+}
