@@ -111,7 +111,12 @@ function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSum
         ),
       };
     })
-    .sort((left, right) => right.reportedAmount - left.reportedAmount);
+    .sort((left, right) => {
+      if (dimension === 'date') {
+        return left.value.localeCompare(right.value);
+      }
+      return right.reportedAmount - left.reportedAmount;
+    });
 }
 
 export function buildSummaryRows(records: DealRecord[], primaryDimension: DimensionKey): SummaryRow[] {
