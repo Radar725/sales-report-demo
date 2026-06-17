@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
@@ -109,5 +109,52 @@ describe('App', () => {
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     expect(within(drawer).queryByRole('tab', { name: '项目分类' })).not.toBeInTheDocument();
+  });
+
+  it('filters the summary table by customer statistical scope', async () => {
+    render(<App />);
+
+    // Verify initial unfiltered consultant total is visible
+    expect(screen.getByRole('cell', { name: '180.0万' })).toBeInTheDocument();
+
+    // Open customer scope dropdown via mousedown (Ant Design uses mousedown internally)
+    const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
+    const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
+    fireEvent.mouseDown(selector);
+
+    // Select "当期新客" from dropdown
+    const option = await screen.findByText('当期新客');
+    fireEvent.click(option);
+
+    // After filtering by customerCreatedInPeriod, 张敏's total changes from 180.0万 → 125.0万
+    await waitFor(() => {
+      expect(screen.queryByRole('cell', { name: '180.0万' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('uses filtered records inside the breakdown drawer', async () => {
+    render(<App />);
+
+    // Apply customer scope filter first
+    const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
+    const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
+    fireEvent.mouseDown(selector);
+
+    const option = await screen.findByText('当期新客');
+    fireEvent.click(option);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('cell', { name: '180.0万' })).not.toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    // Open breakdown drawer — first row should now be 张敏 with filtered data
+    await user.click(screen.getAllByRole('button', { name: '查看拆解' })[0]);
+
+    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    // Switch to channel tab — "自然流量" (D005) should NOT appear since it's not a new customer
+    await user.click(within(drawer).getByRole('tab', { name: '渠道' }));
+    expect(within(drawer).getByRole('cell', { name: '信息流' })).toBeInTheDocument();
+    expect(within(drawer).queryByRole('cell', { name: '自然流量' })).not.toBeInTheDocument();
   });
 });
