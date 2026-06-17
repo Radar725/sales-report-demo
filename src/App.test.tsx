@@ -212,18 +212,21 @@ describe('App', () => {
     expect(within(drawer).getByRole('cell', { name: '转介绍' })).toBeInTheDocument();
   });
 
-  it('renders dashboard tab with ten total metric cards', () => {
+  it('renders dashboard tab with grouped total metrics', () => {
     render(<App />);
 
     expect(screen.getByRole('tab', { name: '仪表盘' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '报表' })).toBeInTheDocument();
     expect(screen.getByText('上报业绩')).toBeInTheDocument();
+    expect(screen.getByText('成交概况')).toBeInTheDocument();
     expect(screen.getByText('确认业绩')).toBeInTheDocument();
     expect(screen.getByText('成交单量')).toBeInTheDocument();
     expect(screen.getByText('成交客户数')).toBeInTheDocument();
+    expect(screen.getByText('新诊成交')).toBeInTheDocument();
     expect(screen.getByText('新诊业绩')).toBeInTheDocument();
     expect(screen.getByText('新诊单量')).toBeInTheDocument();
     expect(screen.getByText('新诊客户数')).toBeInTheDocument();
+    expect(screen.getByText('复购成交')).toBeInTheDocument();
     expect(screen.getByText('复购业绩')).toBeInTheDocument();
     expect(screen.getByText('复购单量')).toBeInTheDocument();
     expect(screen.getByText('复购客户数')).toBeInTheDocument();
