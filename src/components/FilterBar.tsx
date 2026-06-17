@@ -1,4 +1,4 @@
-import { Button, DatePicker, Form, Modal, Select, Space, TreeSelect } from 'antd';
+import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import type { DealRecord } from '../data/mockDeals';
@@ -8,7 +8,6 @@ import {
   buildTreeData,
   getFilterOptions,
   type CustomerScopeFilter,
-  type DealTypeFilter,
   type SalesDashboardFilters,
   type TreeDataNode,
 } from '../domain/filters';
@@ -20,12 +19,6 @@ type FilterBarProps = {
   onFiltersChange: (filters: SalesDashboardFilters) => void;
   onPrimaryDimensionChange: (dimension: DimensionKey) => void;
 };
-
-const dealTypeOptions: Array<{ value: DealTypeFilter; label: string }> = [
-  { value: 'all', label: '全部' },
-  { value: 'newDiagnosis', label: '新诊' },
-  { value: 'repurchase', label: '复购' },
-];
 
 const customerScopeOptions: Array<{ value: CustomerScopeFilter; label: string }> = [
   { value: 'all', label: '全部' },
@@ -82,25 +75,25 @@ export default function FilterBar({
   onFiltersChange,
   onPrimaryDimensionChange,
 }: FilterBarProps) {
-  // --- toolbar local state (committed only on "查询") ---
-  const [toolbarDateRange, setToolbarDateRange] = useState(filters.dateRange);
-  const [toolbarPrimaryDimension, setToolbarPrimaryDimension] = useState(primaryDimension);
-  const [toolbarCustomerScope, setToolbarCustomerScope] = useState(filters.customerScope);
+  // --- local filter state (committed to parent on "查询") ---
+  const [localFilters, setLocalFilters] = useState<SalesDashboardFilters>(() => ({
+    ...defaultFiltersReset,
+    ...filters,
+  }));
+  const [localPrimaryDimension, setLocalPrimaryDimension] = useState<DimensionKey>(primaryDimension);
+  const [expanded, setExpanded] = useState(false);
 
-  // Sync toolbar state when effective filters change (e.g. from modal query)
+  // Sync from parent when effective filters change externally
   useEffect(() => {
-    setToolbarDateRange(filters.dateRange);
-    setToolbarCustomerScope(filters.customerScope);
-  }, [filters.dateRange, filters.customerScope]);
+    setLocalFilters({
+      ...defaultFiltersReset,
+      ...filters,
+    });
+  }, [filters]);
 
   useEffect(() => {
-    setToolbarPrimaryDimension(primaryDimension);
+    setLocalPrimaryDimension(primaryDimension);
   }, [primaryDimension]);
-
-  // --- modal state ---
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalFilters, setModalFilters] = useState<SalesDashboardFilters>(filters);
-  const [modalPrimaryDimension, setModalPrimaryDimension] = useState<DimensionKey>(primaryDimension);
 
   const treeData = useMemo(() => buildTreeData(records), [records]);
   const customerPoolOptions = useMemo(
@@ -108,38 +101,17 @@ export default function FilterBar({
     [records],
   );
 
-  function handleToolbarQuery() {
-    onFiltersChange({
-      ...defaultFiltersReset,
-      dateRange: toolbarDateRange ?? todayRange,
-      customerScope: toolbarCustomerScope,
-    });
-    onPrimaryDimensionChange(toolbarPrimaryDimension);
+  function handleQuery() {
+    onFiltersChange(localFilters);
+    onPrimaryDimensionChange(localPrimaryDimension);
   }
 
-  function handleToolbarReset() {
-    setToolbarDateRange(todayRange);
-    setToolbarCustomerScope('all');
-    setToolbarPrimaryDimension('consultant');
-    onFiltersChange(defaultFiltersReset);
+  function handleReset() {
+    const reset = { ...defaultFiltersReset };
+    setLocalFilters(reset);
+    setLocalPrimaryDimension('consultant');
+    onFiltersChange(reset);
     onPrimaryDimensionChange('consultant');
-  }
-
-  function openModal() {
-    setModalFilters(filters);
-    setModalPrimaryDimension(primaryDimension);
-    setModalOpen(true);
-  }
-
-  function handleModalQuery() {
-    onFiltersChange(modalFilters);
-    onPrimaryDimensionChange(modalPrimaryDimension);
-    setModalOpen(false);
-  }
-
-  function handleModalReset() {
-    setModalFilters(defaultFiltersReset);
-    setModalPrimaryDimension('consultant');
   }
 
   function getParentValues(tree: TreeDataNode[]): Set<string> {
@@ -147,245 +119,189 @@ export default function FilterBar({
   }
 
   return (
-    <>
-      <Form layout="inline" className="filter-bar">
-        <Form.Item label="统计时间">
-          <DatePicker.RangePicker
-            allowClear={false}
-            presets={presets}
-            value={
-              toolbarDateRange?.map((date) => dayjs(date)) as
-                | [dayjs.Dayjs, dayjs.Dayjs]
-                | undefined
-            }
-            onChange={(_, dateStrings) => {
-              setToolbarDateRange(
+    <Form layout="inline" className="filter-bar">
+      <Form.Item label="统计时间">
+        <DatePicker.RangePicker
+          allowClear={false}
+          presets={presets}
+          value={
+            localFilters.dateRange?.map((date) => dayjs(date)) as
+              | [dayjs.Dayjs, dayjs.Dayjs]
+              | undefined
+          }
+          onChange={(_, dateStrings) => {
+            setLocalFilters((prev) => ({
+              ...prev,
+              dateRange:
                 dateStrings[0] && dateStrings[1] ? [dateStrings[0], dateStrings[1]] : null,
-              );
-            }}
-          />
-        </Form.Item>
-        <Form.Item label="主维度">
-          <Select
-            value={toolbarPrimaryDimension}
-            style={{ width: 140 }}
-            placeholder="请选择主维度"
-            aria-label="主维度"
-            virtual={false}
-            options={dimensions.map((dimension) => ({
-              value: dimension.key,
-              label: dimension.label,
-            }))}
-            onChange={setToolbarPrimaryDimension}
-          />
-        </Form.Item>
-        <Form.Item label="客户统计范围">
-          <Select
-            value={toolbarCustomerScope}
-            style={{ width: 160 }}
-            placeholder="请选择客户统计范围"
-            options={customerScopeOptions}
-            onChange={setToolbarCustomerScope}
-          />
-        </Form.Item>
-        <Form.Item>
-          <Space>
-            <Button type="primary" onClick={handleToolbarQuery}>
-              查询
-            </Button>
-            <Button onClick={handleToolbarReset}>重置</Button>
-            <Button onClick={openModal}>全部筛选</Button>
-            <Button>导出汇总</Button>
-          </Space>
-        </Form.Item>
-      </Form>
+            }));
+          }}
+        />
+      </Form.Item>
+      <Form.Item label="主维度">
+        <Select
+          value={localPrimaryDimension}
+          style={{ width: 140 }}
+          placeholder="请选择主维度"
+          aria-label="主维度"
+          virtual={false}
+          options={dimensions.map((d) => ({ value: d.key, label: d.label }))}
+          onChange={setLocalPrimaryDimension}
+        />
+      </Form.Item>
+      <Form.Item label="客户统计范围">
+        <Select
+          value={localFilters.customerScope}
+          style={{ width: 160 }}
+          placeholder="请选择客户统计范围"
+          options={customerScopeOptions}
+          onChange={(customerScope) =>
+            setLocalFilters((prev) => ({ ...prev, customerScope }))
+          }
+        />
+      </Form.Item>
+      <Form.Item label="咨询师">
+        <TreeSelect
+          treeData={treeData.consultantTree}
+          treeCheckable
+          treeCheckStrictly={false}
+          showCheckedStrategy={TreeSelect.SHOW_ALL}
+          maxTagCount="responsive"
+          style={{ width: 180 }}
+          placeholder="请选择部门/咨询师"
+          value={[...localFilters.departments, ...localFilters.consultants]}
+          onChange={(selected) => {
+            const parentValues = getParentValues(treeData.consultantTree);
+            const parents = selected.filter((v) => parentValues.has(v));
+            const children = selected.filter((v) => !parentValues.has(v));
+            setLocalFilters((prev) => ({
+              ...prev,
+              departments: parents,
+              consultants: children,
+            }));
+          }}
+        />
+      </Form.Item>
+      <Form.Item label="渠道">
+        <TreeSelect
+          treeData={treeData.channelTree}
+          treeCheckable
+          treeCheckStrictly={false}
+          showCheckedStrategy={TreeSelect.SHOW_ALL}
+          maxTagCount="responsive"
+          style={{ width: 180 }}
+          placeholder="请选择渠道分类/渠道"
+          value={[...localFilters.channelCategories, ...localFilters.channels]}
+          onChange={(selected) => {
+            const parentValues = getParentValues(treeData.channelTree);
+            const parents = selected.filter((v) => parentValues.has(v));
+            const children = selected.filter((v) => !parentValues.has(v));
+            setLocalFilters((prev) => ({
+              ...prev,
+              channelCategories: parents,
+              channels: children,
+            }));
+          }}
+        />
+      </Form.Item>
+      <Form.Item label="项目">
+        <TreeSelect
+          treeData={treeData.projectTree}
+          treeCheckable
+          treeCheckStrictly={false}
+          showCheckedStrategy={TreeSelect.SHOW_ALL}
+          maxTagCount="responsive"
+          style={{ width: 180 }}
+          placeholder="请选择项目分类/项目"
+          value={[...localFilters.projectCategories, ...localFilters.projects]}
+          onChange={(selected) => {
+            const parentValues = getParentValues(treeData.projectTree);
+            const parents = selected.filter((v) => parentValues.has(v));
+            const children = selected.filter((v) => !parentValues.has(v));
+            setLocalFilters((prev) => ({
+              ...prev,
+              projectCategories: parents,
+              projects: children,
+            }));
+          }}
+        />
+      </Form.Item>
 
-      <Modal
-        title="全部筛选"
-        open={modalOpen}
-        width={960}
-        onCancel={() => setModalOpen(false)}
-        footer={
-          <div style={{ textAlign: 'right' }}>
-            <Space>
-              <Button type="primary" onClick={handleModalQuery}>
-                查询
-              </Button>
-              <Button onClick={handleModalReset}>重置</Button>
-            </Space>
-          </div>
-        }
-        destroyOnHidden
-      >
-        <div className="filter-grid">
-          {/* Row 1 */}
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">统计时间</div>
-            <DatePicker.RangePicker
-              allowClear={false}
-              presets={presets}
-              style={{ width: '100%' }}
-              value={
-                modalFilters.dateRange?.map((date) => dayjs(date)) as
-                  | [dayjs.Dayjs, dayjs.Dayjs]
-                  | undefined
-              }
-              onChange={(_, dateStrings) => {
-                setModalFilters((prev) => ({
-                  ...prev,
-                  dateRange:
-                    dateStrings[0] && dateStrings[1] ? [dateStrings[0], dateStrings[1]] : null,
-                }));
-              }}
-            />
-          </div>
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">主维度</div>
-            <Select
-              value={modalPrimaryDimension}
-              style={{ width: '100%' }}
-              placeholder="请选择主维度"
-              virtual={false}
-              options={dimensions.map((d) => ({ value: d.key, label: d.label }))}
-              onChange={setModalPrimaryDimension}
-            />
-          </div>
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">客户统计范围</div>
-            <Select
-              value={modalFilters.customerScope}
-              style={{ width: '100%' }}
-              placeholder="请选择客户统计范围"
-              options={customerScopeOptions}
-              onChange={(customerScope) =>
-                setModalFilters((prev) => ({ ...prev, customerScope }))
-              }
-            />
-          </div>
-
-          {/* Row 2 */}
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">咨询师</div>
-            <TreeSelect
-              treeData={treeData.consultantTree}
-              treeCheckable
-              treeCheckStrictly={false}
-              showCheckedStrategy={TreeSelect.SHOW_ALL}
-              maxTagCount="responsive"
-              style={{ width: '100%' }}
-              placeholder="请选择部门/咨询师"
-              value={[...modalFilters.departments, ...modalFilters.consultants]}
-              onChange={(selected) => {
-                const parentValues = getParentValues(treeData.consultantTree);
-                const parents = selected.filter((v) => parentValues.has(v));
-                const children = selected.filter((v) => !parentValues.has(v));
-                setModalFilters((prev) => ({
-                  ...prev,
-                  departments: parents,
-                  consultants: children,
-                }));
-              }}
-            />
-          </div>
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">渠道</div>
-            <TreeSelect
-              treeData={treeData.channelTree}
-              treeCheckable
-              treeCheckStrictly={false}
-              showCheckedStrategy={TreeSelect.SHOW_ALL}
-              maxTagCount="responsive"
-              style={{ width: '100%' }}
-              placeholder="请选择渠道分类/渠道"
-              value={[...modalFilters.channelCategories, ...modalFilters.channels]}
-              onChange={(selected) => {
-                const parentValues = getParentValues(treeData.channelTree);
-                const parents = selected.filter((v) => parentValues.has(v));
-                const children = selected.filter((v) => !parentValues.has(v));
-                setModalFilters((prev) => ({
-                  ...prev,
-                  channelCategories: parents,
-                  channels: children,
-                }));
-              }}
-            />
-          </div>
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">项目</div>
-            <TreeSelect
-              treeData={treeData.projectTree}
-              treeCheckable
-              treeCheckStrictly={false}
-              showCheckedStrategy={TreeSelect.SHOW_ALL}
-              maxTagCount="responsive"
-              style={{ width: '100%' }}
-              placeholder="请选择项目分类/项目"
-              value={[...modalFilters.projectCategories, ...modalFilters.projects]}
-              onChange={(selected) => {
-                const parentValues = getParentValues(treeData.projectTree);
-                const parents = selected.filter((v) => parentValues.has(v));
-                const children = selected.filter((v) => !parentValues.has(v));
-                setModalFilters((prev) => ({
-                  ...prev,
-                  projectCategories: parents,
-                  projects: children,
-                }));
-              }}
-            />
-          </div>
-
-          {/* Row 3 */}
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">城市&机构</div>
+      {expanded && (
+        <>
+          <Form.Item label="城市&机构">
             <TreeSelect
               treeData={treeData.cityTree}
               treeCheckable
               treeCheckStrictly={false}
               showCheckedStrategy={TreeSelect.SHOW_ALL}
               maxTagCount="responsive"
-              style={{ width: '100%' }}
+              style={{ width: 180 }}
               placeholder="请选择城市/机构"
-              value={[...modalFilters.cities, ...modalFilters.institutions]}
+              value={[...localFilters.cities, ...localFilters.institutions]}
               onChange={(selected) => {
                 const parentValues = getParentValues(treeData.cityTree);
                 const parents = selected.filter((v) => parentValues.has(v));
                 const children = selected.filter((v) => !parentValues.has(v));
-                setModalFilters((prev) => ({
+                setLocalFilters((prev) => ({
                   ...prev,
                   cities: parents,
                   institutions: children,
                 }));
               }}
             />
-          </div>
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">客户池</div>
+          </Form.Item>
+          <Form.Item label="客户池">
             <Select
               mode="multiple"
-              value={modalFilters.customerPools}
+              value={localFilters.customerPools}
               placeholder="请选择客户池"
               maxTagCount="responsive"
-              style={{ width: '100%' }}
+              style={{ width: 180 }}
               options={toSelectOptions(customerPoolOptions)}
               onChange={(customerPools) =>
-                setModalFilters((prev) => ({ ...prev, customerPools }))
+                setLocalFilters((prev) => ({ ...prev, customerPools }))
               }
             />
-          </div>
-          <div className="filter-grid-item">
-            <div className="filter-grid-label">成交类型</div>
-            <Select
-              value={modalFilters.dealType}
-              placeholder="请选择成交类型"
-              style={{ width: '100%' }}
-              options={dealTypeOptions}
-              onChange={(dealType) =>
-                setModalFilters((prev) => ({ ...prev, dealType }))
-              }
-            />
-          </div>
+          </Form.Item>
+        </>
+      )}
+
+      {expanded ? (
+        <div style={{ width: '100%', marginTop: 8 }}>
+          <Space>
+            <Button type="primary" onClick={handleQuery}>
+              查询
+            </Button>
+            <Button onClick={handleReset}>重置</Button>
+            <Button>导出汇总</Button>
+          </Space>
+          <Button
+            type="link"
+            style={{ padding: 0, marginLeft: 8 }}
+            onClick={() => setExpanded(false)}
+          >
+            收起 &#x25B2;
+          </Button>
         </div>
-      </Modal>
-    </>
+      ) : (
+        <Form.Item>
+          <Space>
+            <Button type="primary" onClick={handleQuery}>
+              查询
+            </Button>
+            <Button onClick={handleReset}>重置</Button>
+            <Button>导出汇总</Button>
+          </Space>
+          <Button
+            type="link"
+            style={{ padding: 0, marginLeft: 8 }}
+            onClick={() => setExpanded(true)}
+          >
+            展开 &#x25BC;
+          </Button>
+        </Form.Item>
+      )}
+    </Form>
   );
 }
