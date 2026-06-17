@@ -94,4 +94,38 @@ describe('sales analytics aggregation', () => {
       dealCount: 3,
     });
   });
+
+  it('sorts date summary rows chronologically ascending', () => {
+    const rows = buildSummaryRows(mockDeals, 'date');
+
+    const dates = rows.map((row) => row.primaryDimensionValue);
+    expect(dates).toEqual([
+      '2026-06-02',
+      '2026-06-05',
+      '2026-06-06',
+      '2026-06-09',
+      '2026-06-11',
+      '2026-06-13',
+      '2026-06-17',
+      '2026-06-20',
+      '2026-06-22',
+    ]);
+  });
+
+  it('sorts date breakdown rows chronologically ascending', () => {
+    const rows = buildBreakdownRows(mockDeals, {
+      primaryDimension: 'consultant',
+      primaryDimensionValue: '张敏',
+      breakdownDimension: 'date',
+    });
+
+    const dates = rows.map((row) => row.breakdownDimensionValue);
+    expect(dates).toEqual([
+      '2026-06-02',
+      '2026-06-06',
+      '2026-06-11',
+      '2026-06-17',
+      '2026-06-20',
+    ]);
+  });
 });
