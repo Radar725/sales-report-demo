@@ -1,3 +1,4 @@
+import type { TreeSelectProps } from 'antd';
 import type { DealRecord, DealType } from '../data/mockDeals';
 
 export type DealTypeFilter = 'all' | 'newDiagnosis' | 'repurchase';
@@ -13,14 +14,19 @@ export type SalesDashboardFilters = {
   projectCategories: string[];
   projects: string[];
   customerScope: CustomerScopeFilter;
+  customerPools: string[];
   cities: string[];
   institutions: string[];
 };
 
-export type FilterOptionScope = Pick<
-  SalesDashboardFilters,
-  'departments' | 'channelCategories' | 'projectCategories' | 'cities'
->;
+export type TreeDataNode = NonNullable<TreeSelectProps['treeData']>[number];
+
+export type FilterTreeData = {
+  consultantTree: TreeDataNode[];
+  channelTree: TreeDataNode[];
+  projectTree: TreeDataNode[];
+  cityTree: TreeDataNode[];
+};
 
 export type SalesDashboardFilterOptions = {
   departments: string[];
@@ -29,6 +35,7 @@ export type SalesDashboardFilterOptions = {
   channels: string[];
   projectCategories: string[];
   projects: string[];
+  customerPools: string[];
   cities: string[];
   institutions: string[];
 };
@@ -50,6 +57,46 @@ function uniqueSorted(values: string[]) {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right, 'zh-Hans-CN'));
 }
 
+export function buildTreeData(records: DealRecord[]): FilterTreeData {
+  const deptMap = new Map<string, Set<string>>();
+  const channelCatMap = new Map<string, Set<string>>();
+  const projectCatMap = new Map<string, Set<string>>();
+  const cityMap = new Map<string, Set<string>>();
+
+  for (const r of records) {
+    if (!deptMap.has(r.department)) deptMap.set(r.department, new Set());
+    deptMap.get(r.department)!.add(r.consultant);
+
+    if (!channelCatMap.has(r.channelCategory)) channelCatMap.set(r.channelCategory, new Set());
+    channelCatMap.get(r.channelCategory)!.add(r.channel);
+
+    if (!projectCatMap.has(r.projectCategory)) projectCatMap.set(r.projectCategory, new Set());
+    projectCatMap.get(r.projectCategory)!.add(r.project);
+
+    if (!cityMap.has(r.city)) cityMap.set(r.city, new Set());
+    cityMap.get(r.city)!.add(r.institution);
+  }
+
+  function toTree(map: Map<string, Set<string>>): TreeDataNode[] {
+    return [...map.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'zh-Hans-CN'))
+      .map(([parent, children]) => ({
+        title: parent,
+        value: parent,
+        children: [...children]
+          .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
+          .map((child) => ({ title: child, value: child })),
+      }));
+  }
+
+  return {
+    consultantTree: toTree(deptMap),
+    channelTree: toTree(channelCatMap),
+    projectTree: toTree(projectCatMap),
+    cityTree: toTree(cityMap),
+  };
+}
+
 export function filterDealRecords(records: DealRecord[], filters: SalesDashboardFilters) {
   return records.filter((record) => {
     const matchesDateRange =
@@ -66,6 +113,7 @@ export function filterDealRecords(records: DealRecord[], filters: SalesDashboard
       isInSelection(record.projectCategory, filters.projectCategories) &&
       isInSelection(record.project, filters.projects) &&
       (filters.customerScope === 'all' || record.customerCreatedInPeriod) &&
+      isInSelection(record.customerPool, filters.customerPools) &&
       isInSelection(record.city, filters.cities) &&
       isInSelection(record.institution, filters.institutions)
     );
@@ -74,27 +122,8 @@ export function filterDealRecords(records: DealRecord[], filters: SalesDashboard
 
 export function getFilterOptions(
   records: DealRecord[],
-  scope: FilterOptionScope,
-): SalesDashboardFilterOptions {
-  const consultantRecords = records.filter((record) =>
-    isInSelection(record.department, scope.departments),
-  );
-  const channelRecords = records.filter((record) =>
-    isInSelection(record.channelCategory, scope.channelCategories),
-  );
-  const projectRecords = records.filter((record) =>
-    isInSelection(record.projectCategory, scope.projectCategories),
-  );
-  const institutionRecords = records.filter((record) => isInSelection(record.city, scope.cities));
-
+): Pick<SalesDashboardFilterOptions, 'customerPools'> {
   return {
-    departments: uniqueSorted(records.map((record) => record.department)),
-    consultants: uniqueSorted(consultantRecords.map((record) => record.consultant)),
-    channelCategories: uniqueSorted(records.map((record) => record.channelCategory)),
-    channels: uniqueSorted(channelRecords.map((record) => record.channel)),
-    projectCategories: uniqueSorted(records.map((record) => record.projectCategory)),
-    projects: uniqueSorted(projectRecords.map((record) => record.project)),
-    cities: uniqueSorted(records.map((record) => record.city)),
-    institutions: uniqueSorted(institutionRecords.map((record) => record.institution)),
+    customerPools: uniqueSorted(records.map((record) => record.customerPool)),
   };
 }
