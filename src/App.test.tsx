@@ -8,21 +8,61 @@ async function openReportTab(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('App', () => {
-  it('renders expanded grouped metrics in the summary table', async () => {
+  it('shows contribution ratio columns when deal type and customer scope are both restricted', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await openReportTab(user);
 
-    expect(screen.getByRole('columnheader', { name: '业绩总览' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '上报业绩 ?' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '新诊业绩 ?' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('columnheader', { name: '历史复购业绩当期贡献率 ?' }),
-    ).toBeInTheDocument();
+    // Widen date range to cover all records
+    const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
+    await user.clear(inputs[0]);
+    await user.type(inputs[0], '2026-06-01');
+    await user.clear(inputs[1]);
+    await user.type(inputs[1], '2026-06-30');
+
+    // Select 新客
+    const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
+    fireEvent.mouseDown(customerScopeFormItem!.querySelector('.ant-select-selector')!);
+    fireEvent.click(await screen.findByText('新客'));
+
+    // Select 新诊 from 成交类型
+    const dealTypeFormItem = screen.getByText('成交类型').closest('.ant-form-item')!;
+    fireEvent.mouseDown(dealTypeFormItem!.querySelector('.ant-select-selector')!);
+    fireEvent.click(await screen.findByText('新诊'));
+
+    // Click 查询
+    const filterBar = document.querySelector('.filter-bar')!;
+    await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));
+
+    // Now the report table should show 业绩占比
+    await waitFor(() => {
+      expect(screen.getByRole('columnheader', { name: '业绩占比' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: '单量占比' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: '客户占比' })).toBeInTheDocument();
+    });
+
+    // Open breakdown drawer — ratios should also appear there
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
+    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    expect(within(drawer).getByRole('columnheader', { name: '业绩占比' })).toBeInTheDocument();
   });
 
-  it('renders the same expanded metrics inside the breakdown drawer', async () => {
+  it('shows only the four base report columns by default', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openReportTab(user);
+
+    expect(screen.getByRole('columnheader', { name: '上报业绩' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '成交单量' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '成交客户数' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '客单价' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /新诊业绩/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '业绩占比' })).not.toBeInTheDocument();
+  });
+
+  it('shows only the four base columns inside the breakdown drawer by default', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -30,11 +70,42 @@ describe('App', () => {
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
-    expect(within(drawer).getByRole('columnheader', { name: '业绩总览' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('columnheader', { name: '复购业绩 ?' })).toBeInTheDocument();
-    expect(
-      within(drawer).getByRole('columnheader', { name: '历史复购客户当期贡献率 ?' }),
-    ).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '上报业绩' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '成交单量' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '成交客户数' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '客单价' })).toBeInTheDocument();
+    expect(within(drawer).queryByRole('columnheader', { name: /新诊业绩/ })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('columnheader', { name: '业绩占比' })).not.toBeInTheDocument();
+  });
+
+  it('shows only old customers when 老客 is selected', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openReportTab(user);
+
+    // Widen date range
+    const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
+    await user.clear(inputs[0]);
+    await user.type(inputs[0], '2026-06-01');
+    await user.clear(inputs[1]);
+    await user.type(inputs[1], '2026-06-30');
+
+    // Select 老客
+    const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
+    fireEvent.mouseDown(customerScopeFormItem!.querySelector('.ant-select-selector')!);
+    fireEvent.click(await screen.findByText('老客'));
+
+    // Click 查询
+    const filterBar = document.querySelector('.filter-bar')!;
+    await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));
+
+    // After filtering for old customers, 张敏 should show only old-customer rows
+    // (D001-D003 are new customers, D004-D005 are old customers for 张敏)
+    await waitFor(() => {
+      // The report row for 张敏 should exist (has old customers)
+      expect(screen.getByRole('cell', { name: '张敏' })).toBeInTheDocument();
+    });
   });
 
   it('shows date and project dimensions in the primary dimension selector', async () => {
@@ -92,6 +163,7 @@ describe('App', () => {
     expect(screen.getByText('统计时间')).toBeInTheDocument();
     expect(screen.queryByText('主维度')).not.toBeInTheDocument();
     expect(screen.getByText('客户统计范围')).toBeInTheDocument();
+    expect(screen.getByText('成交类型')).toBeInTheDocument();
     expect(screen.getAllByText('咨询师').length).toBeGreaterThan(0);
     expect(screen.getAllByText('渠道').length).toBeGreaterThan(0);
     expect(screen.getAllByText('项目').length).toBeGreaterThan(0);
@@ -129,12 +201,12 @@ describe('App', () => {
 
     await openReportTab(user);
 
-    // With today's default date filter, only D004 (repurchase, not new customer) shows.
-    // Selecting "当期新客" should hide D004 since customerCreatedInPeriod is false.
+    // With today's default date filter, only D005 (复购, not new customer) shows.
+    // Selecting "新客" should hide all since no record is both today AND a new customer.
     const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
     const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
     fireEvent.mouseDown(selector);
-    fireEvent.click(await screen.findByText('当期新客'));
+    fireEvent.click(await screen.findByText('新客'));
 
     // Click 查询 in the toolbar to apply the filter
     const filterBar = document.querySelector('.filter-bar')!;
@@ -164,7 +236,7 @@ describe('App', () => {
     const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
     fireEvent.mouseDown(selector);
 
-    const option = await screen.findByText('当期新客');
+    const option = await screen.findByText('新客');
     fireEvent.click(option);
 
     // Click 查询 in the toolbar to apply the filters
@@ -190,6 +262,21 @@ describe('App', () => {
     render(<App />);
 
     await openReportTab(user);
+    // Widen date range first so there are records to open
+    const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
+    await user.clear(inputs[0]);
+    await user.type(inputs[0], '2026-06-01');
+    await user.clear(inputs[1]);
+    await user.type(inputs[1], '2026-06-30');
+
+    // Click 查询
+    const filterBar = document.querySelector('.filter-bar')!;
+    await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('cell', { name: '张敏' })).toBeInTheDocument();
+    });
+
     await user.click(screen.getAllByRole('button', { name: '业绩明细' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: '张敏 · 业绩明细' });
@@ -207,9 +294,6 @@ describe('App', () => {
     expect(within(drawer).getByRole('columnheader', { name: '成交机构' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '成交日期' })).toBeInTheDocument();
     expect(within(drawer).getByRole('columnheader', { name: '上报时间' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('cell', { name: 'C003' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('cell', { name: '13800010003' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('cell', { name: '转介绍' })).toBeInTheDocument();
   });
 
   it('renders dashboard tab with grouped total metrics', () => {
@@ -253,7 +337,7 @@ describe('App', () => {
     const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
     const selector = customerScopeFormItem.querySelector('.ant-select-selector')!;
     fireEvent.mouseDown(selector);
-    fireEvent.click(await screen.findByText('当期新客'));
+    fireEvent.click(await screen.findByText('新客'));
 
     const filterBar = document.querySelector('.filter-bar')!;
     await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));

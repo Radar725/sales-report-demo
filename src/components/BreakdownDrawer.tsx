@@ -3,28 +3,32 @@ import { useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import type { DealRecord } from '../data/mockDeals';
 import {
-  buildBreakdownRows,
+  buildReportBreakdownRows,
   getBreakdownDetailRecords,
-  type BreakdownRow,
-  type SummaryRow,
+  type ReportBreakdownRow,
+  type ReportSummaryRow,
 } from '../domain/analytics';
 import { type DimensionKey, getBreakdownDimensions } from '../domain/dimensions';
-import { buildMetricColumns } from '../domain/metrics';
+import { buildReportMetricColumns } from '../domain/reportMetrics';
 import { detailColumns } from './detailColumns';
 
 type BreakdownDrawerProps = {
   open: boolean;
   records: DealRecord[];
+  baselineRecords: DealRecord[];
   primaryDimension: DimensionKey;
-  row: SummaryRow | null;
+  row: ReportSummaryRow | null;
+  showContributionRates: boolean;
   onClose: () => void;
 };
 
 export default function BreakdownDrawer({
   open,
   records,
+  baselineRecords,
   primaryDimension,
   row,
+  showContributionRates,
   onClose,
 }: BreakdownDrawerProps) {
   const breakdownDimensions = getBreakdownDimensions(primaryDimension);
@@ -43,12 +47,12 @@ export default function BreakdownDrawer({
         <>
           <Tabs
             items={breakdownDimensions.map((breakdownDimension) => {
-              const dataSource = buildBreakdownRows(records, {
+              const dataSource = buildReportBreakdownRows(records, baselineRecords, {
                 primaryDimension,
                 primaryDimensionValue: row.primaryDimensionValue,
                 breakdownDimension: breakdownDimension.key,
               });
-              const columns: ColumnsType<BreakdownRow> = [
+              const columns: ColumnsType<ReportBreakdownRow> = [
                 {
                   title: breakdownDimension.label,
                   dataIndex: 'breakdownDimensionValue',
@@ -56,7 +60,7 @@ export default function BreakdownDrawer({
                   fixed: 'left',
                   width: 140,
                 },
-                ...buildMetricColumns<BreakdownRow>(),
+                ...buildReportMetricColumns<ReportBreakdownRow>(showContributionRates),
                 {
                   title: '操作',
                   key: 'actions',

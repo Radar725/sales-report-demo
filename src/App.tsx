@@ -9,12 +9,12 @@ import SummaryTable from './components/SummaryTable';
 import { mockDeals } from './data/mockDeals';
 import {
   buildDashboardSummary,
-  buildSummaryRows,
+  buildReportSummaryRows,
   getDetailRecords,
-  type SummaryRow,
+  type ReportSummaryRow,
 } from './domain/analytics';
 import { dimensions, getDimension, type DimensionKey } from './domain/dimensions';
-import { filterDealRecords, type SalesDashboardFilters } from './domain/filters';
+import { createBaselineFilters, filterDealRecords, type SalesDashboardFilters } from './domain/filters';
 
 const today = dayjs().format('YYYY-MM-DD');
 
@@ -36,18 +36,26 @@ const defaultFilters: SalesDashboardFilters = {
 export default function App() {
   const [primaryDimension, setPrimaryDimension] = useState<DimensionKey>('consultant');
   const [filters, setFilters] = useState<SalesDashboardFilters>(defaultFilters);
-  const [selectedBreakdownRow, setSelectedBreakdownRow] = useState<SummaryRow | null>(null);
-  const [selectedDetailRow, setSelectedDetailRow] = useState<SummaryRow | null>(null);
+  const [selectedBreakdownRow, setSelectedBreakdownRow] = useState<ReportSummaryRow | null>(null);
+  const [selectedDetailRow, setSelectedDetailRow] = useState<ReportSummaryRow | null>(null);
 
   const filteredRecords = useMemo(() => filterDealRecords(mockDeals, filters), [filters]);
+  const baselineRecords = useMemo(
+    () => filterDealRecords(mockDeals, createBaselineFilters(filters)),
+    [filters],
+  );
+  const showContributionRates = useMemo(
+    () => filters.customerScope !== 'all' || filters.dealType !== 'all',
+    [filters.customerScope, filters.dealType],
+  );
   const dashboardSummary = useMemo(
     () => buildDashboardSummary(filteredRecords),
     [filteredRecords],
   );
   const primaryDimensionConfig = getDimension(primaryDimension);
   const summaryRows = useMemo(
-    () => buildSummaryRows(filteredRecords, primaryDimension),
-    [filteredRecords, primaryDimension],
+    () => buildReportSummaryRows(filteredRecords, baselineRecords, primaryDimension),
+    [filteredRecords, baselineRecords, primaryDimension],
   );
   const detailRecords = useMemo(
     () =>
@@ -112,6 +120,7 @@ export default function App() {
                   <SummaryTable
                     primaryDimension={primaryDimensionConfig}
                     rows={summaryRows}
+                    showContributionRates={showContributionRates}
                     onOpenBreakdown={setSelectedBreakdownRow}
                     onOpenDetails={setSelectedDetailRow}
                   />
@@ -125,8 +134,10 @@ export default function App() {
       <BreakdownDrawer
         open={selectedBreakdownRow !== null}
         records={filteredRecords}
+        baselineRecords={baselineRecords}
         primaryDimension={primaryDimension}
         row={selectedBreakdownRow}
+        showContributionRates={showContributionRates}
         onClose={() => setSelectedBreakdownRow(null)}
       />
 

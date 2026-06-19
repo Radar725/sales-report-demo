@@ -18,7 +18,14 @@ type FilterBarProps = {
 
 const customerScopeOptions: Array<{ value: CustomerScopeFilter; label: string }> = [
   { value: 'all', label: '全部' },
-  { value: 'currentNewCustomers', label: '当期新客' },
+  { value: 'currentNewCustomers', label: '新客' },
+  { value: 'existingCustomers', label: '老客' },
+];
+
+const dealTypeOptions: Array<{ value: string; label: string }> = [
+  { value: 'all', label: '全部' },
+  { value: 'newDiagnosis', label: '新诊' },
+  { value: 'repurchase', label: '复购' },
 ];
 
 function toSelectOptions(values: string[]) {
@@ -132,6 +139,17 @@ export default function FilterBar({
           options={customerScopeOptions}
           onChange={(customerScope) =>
             setLocalFilters((prev) => ({ ...prev, customerScope }))
+          }
+        />
+      </Form.Item>
+      <Form.Item label="成交类型">
+        <Select
+          value={localFilters.dealType}
+          style={{ width: 140 }}
+          placeholder="请选择成交类型"
+          options={dealTypeOptions}
+          onChange={(dealType) =>
+            setLocalFilters((prev) => ({ ...prev, dealType: dealType as SalesDashboardFilters['dealType'] }))
           }
         />
       </Form.Item>

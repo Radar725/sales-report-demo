@@ -1,23 +1,25 @@
 import { Button, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Dimension } from '../domain/dimensions';
-import type { SummaryRow } from '../domain/analytics';
-import { buildMetricColumns } from '../domain/metrics';
+import type { ReportSummaryRow } from '../domain/analytics';
+import { buildReportMetricColumns } from '../domain/reportMetrics';
 
 type SummaryTableProps = {
   primaryDimension: Dimension;
-  rows: SummaryRow[];
-  onOpenBreakdown: (row: SummaryRow) => void;
-  onOpenDetails: (row: SummaryRow) => void;
+  rows: ReportSummaryRow[];
+  showContributionRates: boolean;
+  onOpenBreakdown: (row: ReportSummaryRow) => void;
+  onOpenDetails: (row: ReportSummaryRow) => void;
 };
 
 export default function SummaryTable({
   primaryDimension,
   rows,
+  showContributionRates,
   onOpenBreakdown,
   onOpenDetails,
 }: SummaryTableProps) {
-  const columns: ColumnsType<SummaryRow> = [
+  const columns: ColumnsType<ReportSummaryRow> = [
     {
       title: primaryDimension.label,
       dataIndex: 'primaryDimensionValue',
@@ -25,7 +27,7 @@ export default function SummaryTable({
       fixed: 'left',
       width: 120,
     },
-    ...buildMetricColumns<SummaryRow>(),
+    ...buildReportMetricColumns<ReportSummaryRow>(showContributionRates),
     {
       title: '操作',
       key: 'actions',
