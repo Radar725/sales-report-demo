@@ -12,6 +12,15 @@ export type BreakdownRow = MetricValue & {
   breakdownDimensionValue: string;
 };
 
+export type ReportContributionValues = {
+  reportedAmountRate: number | null;
+  dealCountRate: number | null;
+  customerCountRate: number | null;
+};
+
+export type ReportSummaryRow = SummaryRow & ReportContributionValues;
+export type ReportBreakdownRow = BreakdownRow & ReportContributionValues;
+
 type BreakdownQuery = {
   primaryDimension: DimensionKey;
   primaryDimensionValue: string;
@@ -159,6 +168,71 @@ export function getDetailRecords(records: DealRecord[], query: DetailQuery) {
   return records.filter(
     (record) => getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue,
   );
+}
+
+function toMetricValue(row: AggregateSummary): MetricValue {
+  const { value: _value, ...metrics } = row;
+  return metrics;
+}
+
+function calculateContributionValues(
+  current: MetricValue,
+  baseline: MetricValue | undefined,
+): ReportContributionValues {
+  if (!baseline) {
+    return { reportedAmountRate: null, dealCountRate: null, customerCountRate: null };
+  }
+
+  return {
+    reportedAmountRate: baseline.reportedAmount === 0 ? null : current.reportedAmount / baseline.reportedAmount,
+    dealCountRate: baseline.dealCount === 0 ? null : current.dealCount / baseline.dealCount,
+    customerCountRate: baseline.customerCount === 0 ? null : current.customerCount / baseline.customerCount,
+  };
+}
+
+export function buildReportSummaryRows(
+  records: DealRecord[],
+  baselineRecords: DealRecord[],
+  primaryDimension: DimensionKey,
+): ReportSummaryRow[] {
+  const baselineByValue = new Map(
+    aggregate(baselineRecords, primaryDimension).map((row) => [row.value, toMetricValue(row)]),
+  );
+
+  return aggregate(records, primaryDimension).map((row) => {
+    const metrics = toMetricValue(row);
+    return {
+      key: `${primaryDimension}:${row.value}`,
+      primaryDimensionValue: row.value,
+      ...metrics,
+      ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
+    };
+  });
+}
+
+export function buildReportBreakdownRows(
+  records: DealRecord[],
+  baselineRecords: DealRecord[],
+  query: BreakdownQuery,
+): ReportBreakdownRow[] {
+  const isPrimaryRow = (record: DealRecord) =>
+    getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue;
+  const baselineByValue = new Map(
+    aggregate(baselineRecords.filter(isPrimaryRow), query.breakdownDimension).map((row) => [
+      row.value,
+      toMetricValue(row),
+    ]),
+  );
+
+  return aggregate(records.filter(isPrimaryRow), query.breakdownDimension).map((row) => {
+    const metrics = toMetricValue(row);
+    return {
+      key: `${query.breakdownDimension}:${row.value}`,
+      breakdownDimensionValue: row.value,
+      ...metrics,
+      ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
+    };
+  });
 }
 
 type BreakdownDetailQuery = {

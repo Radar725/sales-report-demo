@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBreakdownRows,
   buildDashboardSummary,
+  buildReportBreakdownRows,
+  buildReportSummaryRows,
   buildSummaryRows,
   getDetailRecords,
 } from './analytics';
@@ -189,5 +191,44 @@ describe('sales analytics aggregation', () => {
       repurchaseDealCount: 0,
       repurchaseCustomerCount: 0,
     });
+  });
+
+  it('calculates summary ratios against the same-dimension baseline row', () => {
+    const currentRecords = mockDeals.filter(
+      (record) => record.consultant === '张敏' && record.dealType === '新诊',
+    );
+    const rows = buildReportSummaryRows(currentRecords, mockDeals, 'consultant');
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        primaryDimensionValue: '张敏',
+        reportedAmount: 1250000,
+        dealCount: 3,
+        customerCount: 3,
+        reportedAmountRate: 1250000 / 1800000,
+        dealCountRate: 3 / 5,
+        customerCountRate: 3 / 4,
+      }),
+    ]);
+  });
+
+  it('calculates breakdown ratios against the same primary and breakdown dimensions', () => {
+    const currentRecords = mockDeals.filter(
+      (record) => record.consultant === '张敏' && record.dealType === '新诊',
+    );
+    const rows = buildReportBreakdownRows(currentRecords, mockDeals, {
+      primaryDimension: 'consultant',
+      primaryDimensionValue: '张敏',
+      breakdownDimension: 'channel',
+    });
+
+    expect(rows.find((row) => row.breakdownDimensionValue === '信息流')).toEqual(
+      expect.objectContaining({
+        reportedAmount: 900000,
+        reportedAmountRate: 1,
+        dealCountRate: 1,
+        customerCountRate: 1,
+      }),
+    );
   });
 });
