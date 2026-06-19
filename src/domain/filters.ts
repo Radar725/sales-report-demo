@@ -2,7 +2,14 @@ import type { TreeSelectProps } from 'antd';
 import type { DealRecord, DealType } from '../data/mockDeals';
 
 export type DealTypeFilter = 'all' | 'newDiagnosis' | 'repurchase';
-export type CustomerScopeFilter = 'all' | 'currentNewCustomers';
+export type CustomerScopeFilter = 'all' | 'currentNewCustomers' | 'existingCustomers';
+
+function matchesCustomerScope(record: DealRecord, customerScope: CustomerScopeFilter) {
+  if (customerScope === 'all') return true;
+  return customerScope === 'currentNewCustomers'
+    ? record.customerCreatedInPeriod
+    : !record.customerCreatedInPeriod;
+}
 
 export type SalesDashboardFilters = {
   dateRange: [string, string] | null;
@@ -112,7 +119,7 @@ export function filterDealRecords(records: DealRecord[], filters: SalesDashboard
       isInSelection(record.channel, filters.channels) &&
       isInSelection(record.projectCategory, filters.projectCategories) &&
       isInSelection(record.project, filters.projects) &&
-      (filters.customerScope === 'all' || record.customerCreatedInPeriod) &&
+      matchesCustomerScope(record, filters.customerScope) &&
       isInSelection(record.customerPool, filters.customerPools) &&
       isInSelection(record.city, filters.cities) &&
       isInSelection(record.institution, filters.institutions)
@@ -126,4 +133,8 @@ export function getFilterOptions(
   return {
     customerPools: uniqueSorted(records.map((record) => record.customerPool)),
   };
+}
+
+export function createBaselineFilters(filters: SalesDashboardFilters): SalesDashboardFilters {
+  return { ...filters, customerScope: 'all', dealType: 'all' };
 }

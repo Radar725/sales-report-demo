@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mockDeals } from '../data/mockDeals';
-import { buildTreeData, filterDealRecords, getFilterOptions, type SalesDashboardFilters } from './filters';
+import { buildTreeData, createBaselineFilters, filterDealRecords, getFilterOptions, type SalesDashboardFilters } from './filters';
 
 const defaultFilters: SalesDashboardFilters = {
   dateRange: null,
@@ -36,6 +36,31 @@ describe('sales dashboard filters', () => {
 
     expect(rows).toHaveLength(5);
     expect(rows.every((record) => record.customerCreatedInPeriod)).toBe(true);
+  });
+
+  it('filters to old customers', () => {
+    const rows = filterDealRecords(mockDeals, {
+      ...defaultFilters,
+      customerScope: 'existingCustomers',
+    });
+
+    expect(rows).toHaveLength(4);
+    expect(rows.every((record) => !record.customerCreatedInPeriod)).toBe(true);
+  });
+
+  it('creates baseline filters by clearing only customer scope and deal type', () => {
+    const filters = {
+      ...defaultFilters,
+      departments: ['华东一部'],
+      customerScope: 'currentNewCustomers' as const,
+      dealType: 'newDiagnosis' as const,
+    };
+
+    expect(createBaselineFilters(filters)).toEqual({
+      ...filters,
+      customerScope: 'all',
+      dealType: 'all',
+    });
   });
 
   it('filters by selected dimensions together', () => {
