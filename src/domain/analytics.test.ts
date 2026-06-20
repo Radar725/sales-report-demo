@@ -170,7 +170,7 @@ describe('sales analytics aggregation', () => {
 
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      key: 'total:汇总',
+      key: 'total',
       primaryDimensionValue: '汇总',
       reportedAmount: 3260000,
       dealCount: 9,

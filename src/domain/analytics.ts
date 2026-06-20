@@ -41,7 +41,15 @@ function safeDivide(numerator: number, denominator: number) {
 }
 
 function getRecordDimensionValue(record: DealRecord, dimension: DimensionKey) {
+  if (dimension === 'total') {
+    return '汇总';
+  }
+
   return dimension === 'date' ? record.dealDate : record[dimension];
+}
+
+function getSummaryRowKey(dimension: DimensionKey, value: string) {
+  return dimension === 'total' ? 'total' : `${dimension}:${value}`;
 }
 
 function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
@@ -146,7 +154,7 @@ function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSum
 
 export function buildSummaryRows(records: DealRecord[], primaryDimension: DimensionKey): SummaryRow[] {
   return aggregate(records, primaryDimension).map((row) => ({
-    key: `${primaryDimension}:${row.value}`,
+    key: getSummaryRowKey(primaryDimension, row.value),
     primaryDimensionValue: row.value,
     ...(({ value: _value, ...metrics }) => metrics)(row),
   }));
@@ -210,7 +218,7 @@ export function buildReportSummaryRows(
   return aggregate(records, primaryDimension).map((row) => {
     const metrics = toMetricValue(row);
     return {
-      key: `${primaryDimension}:${row.value}`,
+      key: getSummaryRowKey(primaryDimension, row.value),
       primaryDimensionValue: row.value,
       ...metrics,
       ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
