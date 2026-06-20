@@ -1,14 +1,12 @@
-import { Card, Select, Space, Tabs } from 'antd';
+import { Card, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import BreakdownDrawer from './components/BreakdownDrawer';
-import DashboardOverview from './components/DashboardOverview';
 import FilterBar from './components/FilterBar';
 import PerformanceDetailDrawer from './components/PerformanceDetailDrawer';
 import SummaryTable from './components/SummaryTable';
 import { mockDeals } from './data/mockDeals';
 import {
-  buildDashboardSummary,
   buildReportSummaryRows,
   getDetailRecords,
   type ReportSummaryRow,
@@ -44,18 +42,24 @@ export default function App() {
     () => filterDealRecords(mockDeals, createBaselineFilters(filters)),
     [filters],
   );
+  const newCustomerMetricRecords = useMemo(
+    () => filterDealRecords(mockDeals, { ...filters, dealType: 'all' }),
+    [filters],
+  );
   const showContributionRates = useMemo(
     () => filters.customerScope !== 'all' || filters.dealType !== 'all',
     [filters.customerScope, filters.dealType],
   );
-  const dashboardSummary = useMemo(
-    () => buildDashboardSummary(filteredRecords),
-    [filteredRecords],
-  );
   const primaryDimensionConfig = getDimension(primaryDimension);
   const summaryRows = useMemo(
-    () => buildReportSummaryRows(filteredRecords, baselineRecords, primaryDimension),
-    [filteredRecords, baselineRecords, primaryDimension],
+    () =>
+      buildReportSummaryRows(
+        filteredRecords,
+        baselineRecords,
+        primaryDimension,
+        newCustomerMetricRecords,
+      ),
+    [filteredRecords, baselineRecords, newCustomerMetricRecords, primaryDimension],
   );
   const detailRecords = useMemo(
     () =>
@@ -83,51 +87,34 @@ export default function App() {
       </Card>
 
       <Card className="content-card">
-        <Tabs
-          defaultActiveKey="dashboard"
-          items={[
-            {
-              key: 'dashboard',
-              label: '仪表盘',
-              children: <DashboardOverview summary={dashboardSummary} />,
-            },
-            {
-              key: 'report',
-              label: '报表',
-              children: (
-                <>
-                  <div className="report-toolbar">
-                    <Space>
-                      <span className="report-toolbar-label">主维度</span>
-                      <Select
-                        value={primaryDimension}
-                        style={{ width: 140 }}
-                        placeholder="请选择主维度"
-                        aria-label="主维度"
-                        virtual={false}
-                        options={dimensions.map((dimension) => ({
-                          value: dimension.key,
-                          label: dimension.label,
-                        }))}
-                        onChange={(dimension) => {
-                          setPrimaryDimension(dimension);
-                          setSelectedBreakdownRow(null);
-                          setSelectedDetailRow(null);
-                        }}
-                      />
-                    </Space>
-                  </div>
-                  <SummaryTable
-                    primaryDimension={primaryDimensionConfig}
-                    rows={summaryRows}
-                    showContributionRates={showContributionRates}
-                    onOpenBreakdown={setSelectedBreakdownRow}
-                    onOpenDetails={setSelectedDetailRow}
-                  />
-                </>
-              ),
-            },
-          ]}
+        <div className="report-toolbar">
+          <Space>
+            <span className="report-toolbar-label">主维度</span>
+            <Select
+              value={primaryDimension}
+              style={{ width: 140 }}
+              placeholder="请选择主维度"
+              aria-label="主维度"
+              virtual={false}
+              options={dimensions.map((dimension) => ({
+                value: dimension.key,
+                label: dimension.label,
+              }))}
+              onChange={(dimension) => {
+                setPrimaryDimension(dimension);
+                setSelectedBreakdownRow(null);
+                setSelectedDetailRow(null);
+              }}
+            />
+          </Space>
+        </div>
+        <SummaryTable
+          primaryDimension={primaryDimensionConfig}
+          rows={summaryRows}
+          showContributionRates={showContributionRates}
+          showNewCustomerMetrics={filters.customerScope === 'currentNewCustomers'}
+          onOpenBreakdown={setSelectedBreakdownRow}
+          onOpenDetails={setSelectedDetailRow}
         />
       </Card>
 
@@ -135,9 +122,11 @@ export default function App() {
         open={selectedBreakdownRow !== null}
         records={filteredRecords}
         baselineRecords={baselineRecords}
+        newCustomerMetricRecords={newCustomerMetricRecords}
         primaryDimension={primaryDimension}
         row={selectedBreakdownRow}
         showContributionRates={showContributionRates}
+        showNewCustomerMetrics={filters.customerScope === 'currentNewCustomers'}
         onClose={() => setSelectedBreakdownRow(null)}
       />
 

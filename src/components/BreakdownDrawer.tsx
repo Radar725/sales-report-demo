@@ -16,9 +16,11 @@ type BreakdownDrawerProps = {
   open: boolean;
   records: DealRecord[];
   baselineRecords: DealRecord[];
+  newCustomerMetricRecords: DealRecord[];
   primaryDimension: DimensionKey;
   row: ReportSummaryRow | null;
   showContributionRates: boolean;
+  showNewCustomerMetrics: boolean;
   onClose: () => void;
 };
 
@@ -26,9 +28,11 @@ export default function BreakdownDrawer({
   open,
   records,
   baselineRecords,
+  newCustomerMetricRecords,
   primaryDimension,
   row,
   showContributionRates,
+  showNewCustomerMetrics,
   onClose,
 }: BreakdownDrawerProps) {
   const breakdownDimensions = getBreakdownDimensions(primaryDimension);
@@ -51,7 +55,7 @@ export default function BreakdownDrawer({
                 primaryDimension,
                 primaryDimensionValue: row.primaryDimensionValue,
                 breakdownDimension: breakdownDimension.key,
-              });
+              }, newCustomerMetricRecords);
               const columns: ColumnsType<ReportBreakdownRow> = [
                 {
                   title: breakdownDimension.label,
@@ -60,7 +64,10 @@ export default function BreakdownDrawer({
                   fixed: 'left',
                   width: 140,
                 },
-                ...buildReportMetricColumns<ReportBreakdownRow>(showContributionRates),
+                ...buildReportMetricColumns<ReportBreakdownRow>({
+                  showContributionRates,
+                  showNewCustomerMetrics,
+                }),
                 {
                   title: '操作',
                   key: 'actions',
