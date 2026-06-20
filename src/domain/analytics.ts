@@ -118,6 +118,10 @@ function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
 }
 
 function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSummary[] {
+  if (dimension === 'total') {
+    return [{ value: '汇总', ...calculateMetrics(records) }];
+  }
+
   const groups = new Map<string, DealRecord[]>();
 
   for (const record of records) {
@@ -165,6 +169,10 @@ export function buildBreakdownRows(records: DealRecord[], query: BreakdownQuery)
 }
 
 export function getDetailRecords(records: DealRecord[], query: DetailQuery) {
+  if (query.primaryDimension === 'total') {
+    return records;
+  }
+
   return records.filter(
     (record) => getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue,
   );

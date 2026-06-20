@@ -161,6 +161,23 @@ describe('sales analytics aggregation', () => {
     expect(records.map((record) => record.id)).toEqual(['D001', 'D002', 'D003', 'D004', 'D005']);
   });
 
+  it('builds one total row and returns every record in its detail scope', () => {
+    const rows = buildReportSummaryRows(mockDeals, mockDeals, 'total');
+    const records = getDetailRecords(mockDeals, {
+      primaryDimension: 'total',
+      primaryDimensionValue: '汇总',
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      key: 'total:汇总',
+      primaryDimensionValue: '汇总',
+      reportedAmount: 3260000,
+      dealCount: 9,
+    });
+    expect(records.map((record) => record.id)).toEqual(mockDeals.map((record) => record.id));
+  });
+
   it('builds dashboard summary totals from the full filtered record set', () => {
     const summary = buildDashboardSummary(mockDeals);
 

@@ -1,6 +1,7 @@
-export type DimensionGroup = 'time' | 'org' | 'source' | 'location' | 'project';
+export type DimensionGroup = 'total' | 'time' | 'org' | 'source' | 'location' | 'project';
 
 export type DimensionKey =
+  | 'total'
   | 'date'
   | 'department'
   | 'consultant'
@@ -18,9 +19,10 @@ export type Dimension = {
   level?: number;
 };
 
-export type RecordDimensionKey = Exclude<DimensionKey, 'date'>;
+export type RecordDimensionKey = Exclude<DimensionKey, 'date' | 'total'>;
 
 export const dimensions: Dimension[] = [
+  { key: 'total', label: '汇总', group: 'total' },
   { key: 'date', label: '日期', group: 'time' },
   { key: 'department', label: '部门', group: 'org', level: 1 },
   { key: 'consultant', label: '咨询师', group: 'org', level: 2 },
@@ -37,7 +39,7 @@ export function getDimension(key: DimensionKey) {
 }
 
 function canBreakDown(primaryDimension: Dimension, breakdownDimension: Dimension) {
-  if (primaryDimension.key === breakdownDimension.key) {
+  if (primaryDimension.key === breakdownDimension.key || breakdownDimension.key === 'total') {
     return false;
   }
 
@@ -53,6 +55,10 @@ function canBreakDown(primaryDimension: Dimension, breakdownDimension: Dimension
 }
 
 export function getBreakdownDimensions(primaryKey: DimensionKey) {
+  if (primaryKey === 'total') {
+    return [];
+  }
+
   const primaryDimension = getDimension(primaryKey);
   return dimensions.filter((dimension) => canBreakDown(primaryDimension, dimension));
 }
