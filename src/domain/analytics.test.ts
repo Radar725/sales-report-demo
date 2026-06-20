@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildBreakdownRows,
-  buildDashboardSummary,
   buildReportBreakdownRows,
   buildReportSummaryRows,
   buildSummaryRows,
@@ -263,38 +262,6 @@ describe('sales analytics aggregation', () => {
         newCustomerConversionRate: 0.75,
       }),
     ]);
-  });
-
-  it('builds dashboard summary totals from the full filtered record set', () => {
-    const summary = buildDashboardSummary(mockDeals);
-
-    expect(summary).toMatchObject({
-      reportedAmount: 3260000,
-      confirmedAmount: 2771000,
-      dealCount: 9,
-      customerCount: 8,
-      newDiagnosisAmount: 2430000,
-      newDiagnosisDealCount: 5,
-      newDiagnosisCustomerCount: 5,
-      repurchaseAmount: 830000,
-      repurchaseDealCount: 4,
-      repurchaseCustomerCount: 4,
-    });
-  });
-
-  it('builds zero dashboard summary for empty records', () => {
-    expect(buildDashboardSummary([])).toMatchObject({
-      reportedAmount: 0,
-      confirmedAmount: 0,
-      dealCount: 0,
-      customerCount: 0,
-      newDiagnosisAmount: 0,
-      newDiagnosisDealCount: 0,
-      newDiagnosisCustomerCount: 0,
-      repurchaseAmount: 0,
-      repurchaseDealCount: 0,
-      repurchaseCustomerCount: 0,
-    });
   });
 
   it('calculates summary ratios against the same-dimension baseline row', () => {

@@ -184,10 +184,6 @@ export function buildSummaryRows(records: DealRecord[], primaryDimension: Dimens
   }));
 }
 
-export function buildDashboardSummary(records: DealRecord[]): MetricValue {
-  return calculateMetrics(records);
-}
-
 export function buildBreakdownRows(records: DealRecord[], query: BreakdownQuery): BreakdownRow[] {
   const scopedRecords = records.filter(
     (record) => getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue,
