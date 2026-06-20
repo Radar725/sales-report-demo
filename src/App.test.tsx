@@ -170,6 +170,26 @@ describe('App', () => {
     expect(screen.getByRole('columnheader', { name: '新客成交率' })).toBeInTheDocument();
   });
 
+  it('shows contribution rate columns for restricted new customer and new diagnosis results', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await setDateRange(user);
+    await selectOption(user, '客户统计范围', '新客');
+    await selectOption(user, '成交类型', '新诊');
+    await applyFilters(user);
+
+    for (const column of ['业绩占比', '单量占比', '客户占比']) {
+      expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
+    }
+
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
+    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    for (const column of ['业绩占比', '单量占比', '客户占比']) {
+      expect(within(drawer).getByRole('columnheader', { name: column })).toBeInTheDocument();
+    }
+  });
+
   it('keeps new customer metrics independent from the deal type filter', async () => {
     const user = userEvent.setup();
     render(<App />);
