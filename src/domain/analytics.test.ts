@@ -214,6 +214,57 @@ describe('sales analytics aggregation', () => {
     });
   });
 
+  it('uses the unfiltered deal-type new customer records for supported report dimensions', () => {
+    const newCustomerMetricRecords = mockDeals
+      .filter((record) => record.customerCreatedInPeriod)
+      .map((record) =>
+        record.id === 'D003' ? { ...record, dealType: '复购' as const } : record,
+      );
+    const businessRecords = newCustomerMetricRecords.filter((record) => record.dealType === '新诊');
+
+    const rows = buildReportSummaryRows(
+      businessRecords,
+      mockDeals,
+      'consultant',
+      newCustomerMetricRecords,
+    );
+
+    expect(rows.find((row) => row.primaryDimensionValue === '张敏')).toMatchObject({
+      newCustomerCount: 4,
+      convertedNewCustomerCount: 3,
+      newCustomerConversionRate: 0.75,
+    });
+  });
+
+  it('uses the unfiltered deal-type new customer records for supported breakdown dimensions', () => {
+    const newCustomerMetricRecords = mockDeals
+      .filter((record) => record.customerCreatedInPeriod)
+      .map((record) =>
+        record.id === 'D003' ? { ...record, dealType: '复购' as const } : record,
+      );
+    const businessRecords = newCustomerMetricRecords.filter((record) => record.dealType === '新诊');
+
+    const rows = buildReportBreakdownRows(
+      businessRecords,
+      mockDeals,
+      {
+        primaryDimension: 'department',
+        primaryDimensionValue: '华东一部',
+        breakdownDimension: 'consultant',
+      },
+      newCustomerMetricRecords,
+    );
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        breakdownDimensionValue: '张敏',
+        newCustomerCount: 4,
+        convertedNewCustomerCount: 3,
+        newCustomerConversionRate: 0.75,
+      }),
+    ]);
+  });
+
   it('builds dashboard summary totals from the full filtered record set', () => {
     const summary = buildDashboardSummary(mockDeals);
 
