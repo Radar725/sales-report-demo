@@ -24,7 +24,7 @@ describe('sales dashboard filters', () => {
       dealType: 'repurchase',
     });
 
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     expect(rows.every((record) => record.dealType === '复购')).toBe(true);
   });
 
@@ -34,7 +34,7 @@ describe('sales dashboard filters', () => {
       customerScope: 'currentNewCustomers',
     });
 
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(7);
     expect(rows.every((record) => record.customerCreatedInPeriod)).toBe(true);
   });
 
@@ -44,8 +44,26 @@ describe('sales dashboard filters', () => {
       customerScope: 'existingCustomers',
     });
 
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     expect(rows.every((record) => !record.customerCreatedInPeriod)).toBe(true);
+  });
+
+  it('has a demo record for every customer scope and deal type combination today', () => {
+    const todayFilters = {
+      ...defaultFilters,
+      dateRange: ['2026-06-20', '2026-06-20'] as [string, string],
+    };
+
+    const combinations = [
+      ['currentNewCustomers', 'newDiagnosis'],
+      ['currentNewCustomers', 'repurchase'],
+      ['existingCustomers', 'newDiagnosis'],
+      ['existingCustomers', 'repurchase'],
+    ] as const;
+
+    for (const [customerScope, dealType] of combinations) {
+      expect(filterDealRecords(mockDeals, { ...todayFilters, customerScope, dealType })).not.toEqual([]);
+    }
   });
 
   it('creates baseline filters by clearing only customer scope and deal type', () => {

@@ -25,14 +25,14 @@ export default function SummaryTable({
       dataIndex: 'primaryDimensionValue',
       key: 'primaryDimensionValue',
       fixed: 'left',
-      width: 120,
+      width: 50,
     },
     ...buildReportMetricColumns<ReportSummaryRow>(showContributionRates),
     {
       title: '操作',
       key: 'actions',
       fixed: 'right',
-      width: 176,
+      width: 60,
       render: (_, row) => (
         <Space size={4}>
           <Button type="link" style={{ paddingInline: 4 }} onClick={() => onOpenBreakdown(row)}>
@@ -53,7 +53,7 @@ export default function SummaryTable({
       dataSource={rows}
       pagination={false}
       bordered
-      scroll={{ x: 2800 }}
+      scroll={{ x: 800 }}
     />
   );
 }

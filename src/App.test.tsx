@@ -195,14 +195,13 @@ describe('App', () => {
     expect(within(drawer).queryByRole('tab', { name: '项目分类' })).not.toBeInTheDocument();
   });
 
-  it('filters the summary table by customer statistical scope', async () => {
+  it('shows demo rows when filtering the summary table by customer statistical scope', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await openReportTab(user);
 
-    // With today's default date filter, only D005 (复购, not new customer) shows.
-    // Selecting "新客" should hide all since no record is both today AND a new customer.
+    // The demo keeps today's new-customer records available after filtering.
     const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
     const selector = customerScopeFormItem!.querySelector('.ant-select-selector')!;
     fireEvent.mouseDown(selector);
@@ -212,9 +211,9 @@ describe('App', () => {
     const filterBar = document.querySelector('.filter-bar')!;
     await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));
 
-    // After filtering, the table should be empty (no record is both today AND a new customer)
+    // After filtering, the table keeps at least one matching demo row.
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: '业绩拆解' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '业绩拆解' })).toBeInTheDocument();
     });
   });
 
@@ -251,9 +250,9 @@ describe('App', () => {
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
-    // Switch to channel tab — "自然流量" (D005) should NOT appear since it's not a new customer
+    // Switch to channel tab — today's demo records remain, while the old-customer record stays hidden.
     await user.click(within(drawer).getByRole('tab', { name: '渠道' }));
-    expect(within(drawer).getByRole('cell', { name: '信息流' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('cell', { name: '演示渠道 A' })).toBeInTheDocument();
     expect(within(drawer).queryByRole('cell', { name: '自然流量' })).not.toBeInTheDocument();
   });
 
@@ -331,8 +330,8 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Dashboard shows deal count 1 (today has one deal)
-    expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+    // Dashboard starts with all four demo combinations for today.
+    expect(screen.getByText('¥580,000')).toBeInTheDocument();
 
     const customerScopeFormItem = screen.getByText('客户统计范围').closest('.ant-form-item')!;
     const selector = customerScopeFormItem.querySelector('.ant-select-selector')!;
@@ -342,13 +341,13 @@ describe('App', () => {
     const filterBar = document.querySelector('.filter-bar')!;
     await user.click(within(filterBar as HTMLElement).getByRole('button', { name: '查 询' }));
 
-    // After filtering, dashboard moves to zero and report has no rows
+    // After filtering, dashboard and report both use the new-customer subset.
     await waitFor(() => {
-      expect(screen.getAllByText('¥0').length).toBeGreaterThan(0);
+      expect(screen.getByText('¥170,000')).toBeInTheDocument();
     });
 
     await openReportTab(user);
 
-    expect(screen.queryByRole('button', { name: '业绩拆解' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '业绩拆解' })).toBeInTheDocument();
   });
 });

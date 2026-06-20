@@ -130,8 +130,8 @@ describe('sales analytics aggregation', () => {
       dealCount: 3,
     });
     expect(rows.find((row) => row.primaryDimensionValue === '李然')).toMatchObject({
-      reportedAmount: 1180000,
-      dealCount: 2,
+      reportedAmount: 1350000,
+      dealCount: 4,
     });
   });
 
@@ -165,16 +165,16 @@ describe('sales analytics aggregation', () => {
     const summary = buildDashboardSummary(mockDeals);
 
     expect(summary).toMatchObject({
-      reportedAmount: 3260000,
-      confirmedAmount: 2771000,
-      dealCount: 9,
-      customerCount: 8,
-      newDiagnosisAmount: 2430000,
-      newDiagnosisDealCount: 5,
-      newDiagnosisCustomerCount: 5,
-      repurchaseAmount: 830000,
-      repurchaseDealCount: 4,
-      repurchaseCustomerCount: 4,
+      reportedAmount: 3490000,
+      confirmedAmount: 2971000,
+      dealCount: 12,
+      customerCount: 11,
+      newDiagnosisAmount: 2570000,
+      newDiagnosisDealCount: 7,
+      newDiagnosisCustomerCount: 7,
+      repurchaseAmount: 920000,
+      repurchaseDealCount: 5,
+      repurchaseCustomerCount: 5,
     });
   });
 

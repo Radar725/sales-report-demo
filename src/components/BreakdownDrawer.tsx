@@ -100,7 +100,7 @@ export default function BreakdownDrawer({
                       dataSource={dataSource}
                       pagination={false}
                       bordered
-                      scroll={{ x: 2800 }}
+                      scroll={{ x: 800 }}
                     />
                   </Space>
                 ),

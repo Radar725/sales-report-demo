@@ -17,19 +17,20 @@ type ReportMetricDefinition = {
   key: ReportMetricKey;
   label: string;
   format: ReportMetricFormat;
+  width: number;
 };
 
 const baseMetrics: ReportMetricDefinition[] = [
-  { key: 'reportedAmount', label: '上报业绩', format: 'amount' },
-  { key: 'dealCount', label: '成交单量', format: 'integer' },
-  { key: 'customerCount', label: '成交客户数', format: 'integer' },
-  { key: 'averageDealAmount', label: '客单价', format: 'amount' },
+  { key: 'reportedAmount', label: '上报业绩', format: 'amount', width: 100 },
+  { key: 'dealCount', label: '成交单量', format: 'integer', width: 70 },
+  { key: 'customerCount', label: '成交客户数', format: 'integer', width: 80 },
+  { key: 'averageDealAmount', label: '客单价', format: 'amount', width: 90 },
 ];
 
 const contributionMetrics: ReportMetricDefinition[] = [
-  { key: 'reportedAmountRate', label: '业绩占比', format: 'percent' },
-  { key: 'dealCountRate', label: '单量占比', format: 'percent' },
-  { key: 'customerCountRate', label: '客户占比', format: 'percent' },
+  { key: 'reportedAmountRate', label: '业绩占比', format: 'percent', width: 70 },
+  { key: 'dealCountRate', label: '单量占比', format: 'percent', width: 70 },
+  { key: 'customerCountRate', label: '客户占比', format: 'percent', width: 70 },
 ];
 
 export function buildReportMetricColumns<T extends ReportMetricValue>(
@@ -44,7 +45,7 @@ export function buildReportMetricColumns<T extends ReportMetricValue>(
     dataIndex: metric.key,
     key: metric.key,
     align: 'right',
-    width: 170,
+    width: metric.width,
     sorter: (left, right) => {
       const leftValue = left[metric.key] ?? 0;
       const rightValue = right[metric.key] ?? 0;
