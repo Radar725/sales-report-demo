@@ -32,6 +32,8 @@ describe('sales analytics aggregation', () => {
       repurchaseDealCountRate: 0.4,
       repurchaseCustomerRate: 0.5,
       repurchaseAmountRate: 0.3055555555555556,
+      newCustomerCount: 4,
+      convertedNewCustomerCount: 3,
       newCustomerConversionRate: 0.75,
       newCustomerAmountContributionRate: 0.6944444444444444,
       historicalRepurchaseCustomerContributionRate: 0.2,
@@ -176,6 +178,40 @@ describe('sales analytics aggregation', () => {
       dealCount: 9,
     });
     expect(records.map((record) => record.id)).toEqual(mockDeals.map((record) => record.id));
+  });
+
+  it('aggregates new customer totals by consultant before calculating the total conversion rate', () => {
+    const [row] = buildReportSummaryRows(mockDeals, mockDeals, 'total');
+
+    expect(row).toMatchObject({
+      newCustomerCount: 9,
+      convertedNewCustomerCount: 5,
+      newCustomerConversionRate: 5 / 9,
+    });
+  });
+
+  it('only exposes new customer metrics for total, department, and consultant report rows', () => {
+    const consultantRows = buildReportSummaryRows(mockDeals, mockDeals, 'consultant');
+    const channelRows = buildReportSummaryRows(mockDeals, mockDeals, 'channel');
+
+    expect(consultantRows.find((row) => row.primaryDimensionValue === '张敏')).toMatchObject({
+      newCustomerCount: 4,
+      convertedNewCustomerCount: 3,
+      newCustomerConversionRate: 0.75,
+    });
+    expect(channelRows[0]).toMatchObject({
+      newCustomerCount: null,
+      newCustomerConversionRate: null,
+    });
+  });
+
+  it('marks the report conversion rate unavailable when a supported row has no new customers', () => {
+    const [row] = buildReportSummaryRows([], [], 'total');
+
+    expect(row).toMatchObject({
+      newCustomerCount: 0,
+      newCustomerConversionRate: null,
+    });
   });
 
   it('builds dashboard summary totals from the full filtered record set', () => {

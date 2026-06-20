@@ -18,8 +18,17 @@ export type ReportContributionValues = {
   customerCountRate: number | null;
 };
 
-export type ReportSummaryRow = SummaryRow & ReportContributionValues;
-export type ReportBreakdownRow = BreakdownRow & ReportContributionValues;
+export type ReportNewCustomerValues = {
+  newCustomerCount: number | null;
+  newCustomerConversionRate: number | null;
+};
+
+export type ReportSummaryRow = Omit<SummaryRow, keyof ReportNewCustomerValues> &
+  ReportContributionValues &
+  ReportNewCustomerValues;
+export type ReportBreakdownRow = Omit<BreakdownRow, keyof ReportNewCustomerValues> &
+  ReportContributionValues &
+  ReportNewCustomerValues;
 
 type BreakdownQuery = {
   primaryDimension: DimensionKey;
@@ -52,6 +61,19 @@ function getSummaryRowKey(dimension: DimensionKey, value: string) {
   return dimension === 'total' ? 'total' : `${dimension}:${value}`;
 }
 
+function getNewCustomerCount(groupRecords: DealRecord[]) {
+  const countByConsultant = new Map<string, number>();
+
+  for (const record of groupRecords) {
+    countByConsultant.set(
+      record.consultant,
+      Math.max(countByConsultant.get(record.consultant) ?? 0, record.createdCustomerCountInPeriod),
+    );
+  }
+
+  return [...countByConsultant.values()].reduce((sum, count) => sum + count, 0);
+}
+
 function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
   const customerIds = new Set(groupRecords.map((record) => record.customerId));
   const newDiagnosisRecords = groupRecords.filter((record) => record.dealType === '新诊');
@@ -76,15 +98,14 @@ function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
   const repurchaseCustomerCount = new Set(
     repurchaseRecords.map((record) => record.customerId),
   ).size;
-  const newCustomerCount = new Set(newCustomerRecords.map((record) => record.customerId)).size;
+  const convertedNewCustomerCount = new Set(
+    newCustomerRecords.map((record) => record.customerId),
+  ).size;
+  const newCustomerCount = getNewCustomerCount(groupRecords);
   const newCustomerAmount = newCustomerRecords.reduce(
     (sum, record) => sum + record.reportedAmount,
     0,
   );
-  const createdCustomerCountInPeriod =
-    groupRecords.length === 0
-      ? 0
-      : Math.max(...groupRecords.map((record) => record.createdCustomerCountInPeriod));
   const historicalRepurchaseCustomerCount =
     groupRecords.length === 0
       ? 0
@@ -112,7 +133,9 @@ function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
     repurchaseDealCountRate: safeDivide(repurchaseRecords.length, dealCount),
     repurchaseCustomerRate: safeDivide(repurchaseCustomerCount, customerCount),
     repurchaseAmountRate: safeDivide(repurchaseAmount, reportedAmount),
-    newCustomerConversionRate: safeDivide(newCustomerCount, createdCustomerCountInPeriod),
+    newCustomerCount,
+    convertedNewCustomerCount,
+    newCustomerConversionRate: safeDivide(convertedNewCustomerCount, newCustomerCount),
     newCustomerAmountContributionRate: safeDivide(newCustomerAmount, reportedAmount),
     historicalRepurchaseCustomerContributionRate: safeDivide(
       repurchaseCustomerCount,
@@ -206,6 +229,21 @@ function calculateContributionValues(
   };
 }
 
+function getReportNewCustomerValues(
+  metrics: MetricValue,
+  dimension: DimensionKey,
+): ReportNewCustomerValues {
+  if (!['total', 'department', 'consultant'].includes(dimension)) {
+    return { newCustomerCount: null, newCustomerConversionRate: null };
+  }
+
+  return {
+    newCustomerCount: metrics.newCustomerCount,
+    newCustomerConversionRate:
+      metrics.newCustomerCount === 0 ? null : metrics.newCustomerConversionRate,
+  };
+}
+
 export function buildReportSummaryRows(
   records: DealRecord[],
   baselineRecords: DealRecord[],
@@ -221,6 +259,7 @@ export function buildReportSummaryRows(
       key: getSummaryRowKey(primaryDimension, row.value),
       primaryDimensionValue: row.value,
       ...metrics,
+      ...getReportNewCustomerValues(metrics, primaryDimension),
       ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
     };
   });
@@ -246,6 +285,7 @@ export function buildReportBreakdownRows(
       key: `${query.breakdownDimension}:${row.value}`,
       breakdownDimensionValue: row.value,
       ...metrics,
+      ...getReportNewCustomerValues(metrics, query.breakdownDimension),
       ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
     };
   });

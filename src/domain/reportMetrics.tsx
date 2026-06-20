@@ -5,6 +5,8 @@ export type ReportMetricValue = Pick<
   MetricValue,
   'reportedAmount' | 'dealCount' | 'customerCount' | 'averageDealAmount'
 > & {
+  newCustomerCount: number | null;
+  newCustomerConversionRate: number | null;
   reportedAmountRate: number | null;
   dealCountRate: number | null;
   customerCountRate: number | null;
@@ -26,6 +28,11 @@ const baseMetrics: ReportMetricDefinition[] = [
   { key: 'averageDealAmount', label: '客单价', format: 'amount' },
 ];
 
+const newCustomerMetrics: ReportMetricDefinition[] = [
+  { key: 'newCustomerCount', label: '新客数', format: 'integer' },
+  { key: 'newCustomerConversionRate', label: '新客成交率', format: 'percent' },
+];
+
 const contributionMetrics: ReportMetricDefinition[] = [
   { key: 'reportedAmountRate', label: '业绩占比', format: 'percent' },
   { key: 'dealCountRate', label: '单量占比', format: 'percent' },
@@ -33,11 +40,14 @@ const contributionMetrics: ReportMetricDefinition[] = [
 ];
 
 export function buildReportMetricColumns<T extends ReportMetricValue>(
-  showContributionRates: boolean,
+  options: { showContributionRates: boolean; showNewCustomerMetrics: boolean },
 ): ColumnsType<T> {
-  const metrics = showContributionRates
-    ? [...baseMetrics, ...contributionMetrics]
-    : baseMetrics;
+  const metrics = [
+    baseMetrics[0],
+    ...(options.showNewCustomerMetrics ? newCustomerMetrics : []),
+    ...baseMetrics.slice(1),
+    ...(options.showContributionRates ? contributionMetrics : []),
+  ];
 
   return metrics.map((metric) => ({
     title: metric.label,
