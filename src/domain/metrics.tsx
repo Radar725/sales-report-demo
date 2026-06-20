@@ -20,6 +20,8 @@ export type MetricKey =
   | 'repurchaseDealCountRate'
   | 'repurchaseCustomerRate'
   | 'repurchaseAmountRate'
+  | 'newCustomerCount'
+  | 'convertedNewCustomerCount'
   | 'newCustomerConversionRate'
   | 'newCustomerAmountContributionRate'
   | 'historicalRepurchaseCustomerContributionRate'

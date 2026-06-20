@@ -18,8 +18,18 @@ export type ReportContributionValues = {
   customerCountRate: number | null;
 };
 
-export type ReportSummaryRow = SummaryRow & ReportContributionValues;
-export type ReportBreakdownRow = BreakdownRow & ReportContributionValues;
+export type ReportNewCustomerValues = {
+  newCustomerCount: number | null;
+  convertedNewCustomerCount: number | null;
+  newCustomerConversionRate: number | null;
+};
+
+export type ReportSummaryRow = Omit<SummaryRow, keyof ReportNewCustomerValues> &
+  ReportContributionValues &
+  ReportNewCustomerValues;
+export type ReportBreakdownRow = Omit<BreakdownRow, keyof ReportNewCustomerValues> &
+  ReportContributionValues &
+  ReportNewCustomerValues;
 
 type BreakdownQuery = {
   primaryDimension: DimensionKey;
@@ -41,7 +51,28 @@ function safeDivide(numerator: number, denominator: number) {
 }
 
 function getRecordDimensionValue(record: DealRecord, dimension: DimensionKey) {
+  if (dimension === 'total') {
+    return '汇总';
+  }
+
   return dimension === 'date' ? record.dealDate : record[dimension];
+}
+
+function getSummaryRowKey(dimension: DimensionKey, value: string) {
+  return dimension === 'total' ? 'total' : `${dimension}:${value}`;
+}
+
+function getNewCustomerCount(groupRecords: DealRecord[]) {
+  const countByConsultant = new Map<string, number>();
+
+  for (const record of groupRecords) {
+    countByConsultant.set(
+      record.consultant,
+      Math.max(countByConsultant.get(record.consultant) ?? 0, record.createdCustomerCountInPeriod),
+    );
+  }
+
+  return [...countByConsultant.values()].reduce((sum, count) => sum + count, 0);
 }
 
 function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
@@ -68,15 +99,14 @@ function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
   const repurchaseCustomerCount = new Set(
     repurchaseRecords.map((record) => record.customerId),
   ).size;
-  const newCustomerCount = new Set(newCustomerRecords.map((record) => record.customerId)).size;
+  const convertedNewCustomerCount = new Set(
+    newCustomerRecords.map((record) => record.customerId),
+  ).size;
+  const newCustomerCount = getNewCustomerCount(groupRecords);
   const newCustomerAmount = newCustomerRecords.reduce(
     (sum, record) => sum + record.reportedAmount,
     0,
   );
-  const createdCustomerCountInPeriod =
-    groupRecords.length === 0
-      ? 0
-      : Math.max(...groupRecords.map((record) => record.createdCustomerCountInPeriod));
   const historicalRepurchaseCustomerCount =
     groupRecords.length === 0
       ? 0
@@ -104,7 +134,9 @@ function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
     repurchaseDealCountRate: safeDivide(repurchaseRecords.length, dealCount),
     repurchaseCustomerRate: safeDivide(repurchaseCustomerCount, customerCount),
     repurchaseAmountRate: safeDivide(repurchaseAmount, reportedAmount),
-    newCustomerConversionRate: safeDivide(newCustomerCount, createdCustomerCountInPeriod),
+    newCustomerCount,
+    convertedNewCustomerCount,
+    newCustomerConversionRate: safeDivide(convertedNewCustomerCount, newCustomerCount),
     newCustomerAmountContributionRate: safeDivide(newCustomerAmount, reportedAmount),
     historicalRepurchaseCustomerContributionRate: safeDivide(
       repurchaseCustomerCount,
@@ -118,6 +150,10 @@ function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
 }
 
 function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSummary[] {
+  if (dimension === 'total') {
+    return [{ value: '汇总', ...calculateMetrics(records) }];
+  }
+
   const groups = new Map<string, DealRecord[]>();
 
   for (const record of records) {
@@ -142,14 +178,10 @@ function aggregate(records: DealRecord[], dimension: DimensionKey): AggregateSum
 
 export function buildSummaryRows(records: DealRecord[], primaryDimension: DimensionKey): SummaryRow[] {
   return aggregate(records, primaryDimension).map((row) => ({
-    key: `${primaryDimension}:${row.value}`,
+    key: getSummaryRowKey(primaryDimension, row.value),
     primaryDimensionValue: row.value,
     ...(({ value: _value, ...metrics }) => metrics)(row),
   }));
-}
-
-export function buildDashboardSummary(records: DealRecord[]): MetricValue {
-  return calculateMetrics(records);
 }
 
 export function buildBreakdownRows(records: DealRecord[], query: BreakdownQuery): BreakdownRow[] {
@@ -165,6 +197,10 @@ export function buildBreakdownRows(records: DealRecord[], query: BreakdownQuery)
 }
 
 export function getDetailRecords(records: DealRecord[], query: DetailQuery) {
+  if (query.primaryDimension === 'total') {
+    return records;
+  }
+
   return records.filter(
     (record) => getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue,
   );
@@ -190,21 +226,50 @@ function calculateContributionValues(
   };
 }
 
+function getReportNewCustomerValues(
+  metrics: MetricValue,
+  dimension: DimensionKey,
+): ReportNewCustomerValues {
+  if (!['total', 'department', 'consultant'].includes(dimension)) {
+    return {
+      newCustomerCount: null,
+      convertedNewCustomerCount: null,
+      newCustomerConversionRate: null,
+    };
+  }
+
+  return {
+    newCustomerCount: metrics.newCustomerCount,
+    convertedNewCustomerCount: metrics.convertedNewCustomerCount,
+    newCustomerConversionRate:
+      metrics.newCustomerCount === 0 ? null : metrics.newCustomerConversionRate,
+  };
+}
+
 export function buildReportSummaryRows(
   records: DealRecord[],
   baselineRecords: DealRecord[],
   primaryDimension: DimensionKey,
+  newCustomerMetricRecords = records,
 ): ReportSummaryRow[] {
   const baselineByValue = new Map(
     aggregate(baselineRecords, primaryDimension).map((row) => [row.value, toMetricValue(row)]),
   );
+  const newCustomerMetricsByValue = new Map(
+    aggregate(newCustomerMetricRecords, primaryDimension).map((row) => [
+      row.value,
+      toMetricValue(row),
+    ]),
+  );
 
   return aggregate(records, primaryDimension).map((row) => {
     const metrics = toMetricValue(row);
+    const newCustomerMetrics = newCustomerMetricsByValue.get(row.value) ?? metrics;
     return {
-      key: `${primaryDimension}:${row.value}`,
+      key: getSummaryRowKey(primaryDimension, row.value),
       primaryDimensionValue: row.value,
       ...metrics,
+      ...getReportNewCustomerValues(newCustomerMetrics, primaryDimension),
       ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
     };
   });
@@ -214,6 +279,7 @@ export function buildReportBreakdownRows(
   records: DealRecord[],
   baselineRecords: DealRecord[],
   query: BreakdownQuery,
+  newCustomerMetricRecords = records,
 ): ReportBreakdownRow[] {
   const isPrimaryRow = (record: DealRecord) =>
     getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue;
@@ -223,13 +289,21 @@ export function buildReportBreakdownRows(
       toMetricValue(row),
     ]),
   );
+  const newCustomerMetricsByValue = new Map(
+    aggregate(newCustomerMetricRecords.filter(isPrimaryRow), query.breakdownDimension).map((row) => [
+      row.value,
+      toMetricValue(row),
+    ]),
+  );
 
   return aggregate(records.filter(isPrimaryRow), query.breakdownDimension).map((row) => {
     const metrics = toMetricValue(row);
+    const newCustomerMetrics = newCustomerMetricsByValue.get(row.value) ?? metrics;
     return {
       key: `${query.breakdownDimension}:${row.value}`,
       breakdownDimensionValue: row.value,
       ...metrics,
+      ...getReportNewCustomerValues(newCustomerMetrics, query.breakdownDimension),
       ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
     };
   });

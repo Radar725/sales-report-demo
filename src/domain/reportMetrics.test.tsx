@@ -3,7 +3,7 @@ import { buildReportMetricColumns } from './reportMetrics';
 
 describe('report metric columns', () => {
   it('shows only the four base report metrics by default', () => {
-    expect(buildReportMetricColumns(false).map((column) => column.key)).toEqual([
+    expect(buildReportMetricColumns({ showContributionRates: false, showNewCustomerMetrics: false }).map((column) => column.key)).toEqual([
       'reportedAmount',
       'dealCount',
       'customerCount',
@@ -12,7 +12,7 @@ describe('report metric columns', () => {
   });
 
   it('appends three contribution ratios for a restricted scope', () => {
-    expect(buildReportMetricColumns(true).map((column) => column.key)).toEqual([
+    expect(buildReportMetricColumns({ showContributionRates: true, showNewCustomerMetrics: false }).map((column) => column.key)).toEqual([
       'reportedAmount',
       'dealCount',
       'customerCount',
@@ -21,5 +21,25 @@ describe('report metric columns', () => {
       'dealCountRate',
       'customerCountRate',
     ]);
+  });
+
+  it('inserts new customer metrics immediately after reported amount when requested', () => {
+    expect(buildReportMetricColumns({ showContributionRates: false, showNewCustomerMetrics: true }).map((column) => column.key)).toEqual([
+      'reportedAmount',
+      'newCustomerCount',
+      'newCustomerConversionRate',
+      'dealCount',
+      'customerCount',
+      'averageDealAmount',
+    ]);
+  });
+
+  it('renders an unavailable new customer metric as an em dash', () => {
+    const column = buildReportMetricColumns({
+      showContributionRates: false,
+      showNewCustomerMetrics: true,
+    }).find((item) => item.key === 'newCustomerCount');
+
+    expect(column?.render?.(null, {} as never, 0)).toBe('—');
   });
 });

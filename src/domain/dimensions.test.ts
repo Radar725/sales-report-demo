@@ -12,6 +12,7 @@ function breakdownKeys(primaryKey: Parameters<typeof getBreakdownDimensions>[0])
 describe('dimension rules', () => {
   it('lists all supported primary dimensions', () => {
     expect(dimensions.map((dimension) => dimension.label)).toEqual([
+      '汇总',
       '日期',
       '部门',
       '咨询师',
@@ -22,6 +23,11 @@ describe('dimension rules', () => {
       '项目分类',
       '项目',
     ]);
+  });
+
+  it('supports total as a primary dimension without breakdown dimensions', () => {
+    expect(dimensions).toContainEqual({ key: 'total', label: '汇总', group: 'total' });
+    expect(getBreakdownDimensions('total')).toEqual([]);
   });
 
   it('allows parent dimensions to break down into child dimensions', () => {

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildBreakdownRows,
-  buildDashboardSummary,
   buildReportBreakdownRows,
   buildReportSummaryRows,
   buildSummaryRows,
@@ -32,6 +31,8 @@ describe('sales analytics aggregation', () => {
       repurchaseDealCountRate: 0.4,
       repurchaseCustomerRate: 0.5,
       repurchaseAmountRate: 0.3055555555555556,
+      newCustomerCount: 4,
+      convertedNewCustomerCount: 3,
       newCustomerConversionRate: 0.75,
       newCustomerAmountContributionRate: 0.6944444444444444,
       historicalRepurchaseCustomerContributionRate: 0.2,
@@ -161,36 +162,106 @@ describe('sales analytics aggregation', () => {
     expect(records.map((record) => record.id)).toEqual(['D001', 'D002', 'D003', 'D004', 'D005']);
   });
 
-  it('builds dashboard summary totals from the full filtered record set', () => {
-    const summary = buildDashboardSummary(mockDeals);
+  it('builds one total row and returns every record in its detail scope', () => {
+    const rows = buildReportSummaryRows(mockDeals, mockDeals, 'total');
+    const records = getDetailRecords(mockDeals, {
+      primaryDimension: 'total',
+      primaryDimensionValue: '汇总',
+    });
 
-    expect(summary).toMatchObject({
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      key: 'total',
+      primaryDimensionValue: '汇总',
       reportedAmount: 3490000,
-      confirmedAmount: 2971000,
       dealCount: 12,
-      customerCount: 11,
-      newDiagnosisAmount: 2570000,
-      newDiagnosisDealCount: 7,
-      newDiagnosisCustomerCount: 7,
-      repurchaseAmount: 920000,
-      repurchaseDealCount: 5,
-      repurchaseCustomerCount: 5,
+    });
+    expect(records.map((record) => record.id)).toEqual(mockDeals.map((record) => record.id));
+  });
+
+  it('aggregates new customer totals by consultant before calculating the total conversion rate', () => {
+    const [row] = buildReportSummaryRows(mockDeals, mockDeals, 'total');
+
+    expect(row).toMatchObject({
+      newCustomerCount: 9,
+      convertedNewCustomerCount: 7,
+      newCustomerConversionRate: 7 / 9,
     });
   });
 
-  it('builds zero dashboard summary for empty records', () => {
-    expect(buildDashboardSummary([])).toMatchObject({
-      reportedAmount: 0,
-      confirmedAmount: 0,
-      dealCount: 0,
-      customerCount: 0,
-      newDiagnosisAmount: 0,
-      newDiagnosisDealCount: 0,
-      newDiagnosisCustomerCount: 0,
-      repurchaseAmount: 0,
-      repurchaseDealCount: 0,
-      repurchaseCustomerCount: 0,
+  it('only exposes new customer metrics for total, department, and consultant report rows', () => {
+    const consultantRows = buildReportSummaryRows(mockDeals, mockDeals, 'consultant');
+    const channelRows = buildReportSummaryRows(mockDeals, mockDeals, 'channel');
+
+    expect(consultantRows.find((row) => row.primaryDimensionValue === '张敏')).toMatchObject({
+      newCustomerCount: 4,
+      convertedNewCustomerCount: 3,
+      newCustomerConversionRate: 0.75,
     });
+    expect(channelRows[0]).toMatchObject({
+      newCustomerCount: null,
+      newCustomerConversionRate: null,
+    });
+  });
+
+  it('marks the report conversion rate unavailable when a supported row has no new customers', () => {
+    const [row] = buildReportSummaryRows([], [], 'total');
+
+    expect(row).toMatchObject({
+      newCustomerCount: 0,
+      newCustomerConversionRate: null,
+    });
+  });
+
+  it('uses the unfiltered deal-type new customer records for supported report dimensions', () => {
+    const newCustomerMetricRecords = mockDeals
+      .filter((record) => record.customerCreatedInPeriod)
+      .map((record) =>
+        record.id === 'D003' ? { ...record, dealType: '复购' as const } : record,
+      );
+    const businessRecords = newCustomerMetricRecords.filter((record) => record.dealType === '新诊');
+
+    const rows = buildReportSummaryRows(
+      businessRecords,
+      mockDeals,
+      'consultant',
+      newCustomerMetricRecords,
+    );
+
+    expect(rows.find((row) => row.primaryDimensionValue === '张敏')).toMatchObject({
+      newCustomerCount: 4,
+      convertedNewCustomerCount: 3,
+      newCustomerConversionRate: 0.75,
+    });
+  });
+
+  it('uses the unfiltered deal-type new customer records for supported breakdown dimensions', () => {
+    const newCustomerMetricRecords = mockDeals
+      .filter((record) => record.customerCreatedInPeriod)
+      .map((record) =>
+        record.id === 'D003' ? { ...record, dealType: '复购' as const } : record,
+      );
+    const businessRecords = newCustomerMetricRecords.filter((record) => record.dealType === '新诊');
+
+    const rows = buildReportBreakdownRows(
+      businessRecords,
+      mockDeals,
+      {
+        primaryDimension: 'department',
+        primaryDimensionValue: '华东一部',
+        breakdownDimension: 'consultant',
+      },
+      newCustomerMetricRecords,
+    );
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        breakdownDimensionValue: '张敏',
+        newCustomerCount: 4,
+        convertedNewCustomerCount: 3,
+        newCustomerConversionRate: 0.75,
+      }),
+    ]);
   });
 
   it('calculates summary ratios against the same-dimension baseline row', () => {

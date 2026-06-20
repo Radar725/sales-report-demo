@@ -8,6 +8,7 @@ type SummaryTableProps = {
   primaryDimension: Dimension;
   rows: ReportSummaryRow[];
   showContributionRates: boolean;
+  showNewCustomerMetrics: boolean;
   onOpenBreakdown: (row: ReportSummaryRow) => void;
   onOpenDetails: (row: ReportSummaryRow) => void;
 };
@@ -16,6 +17,7 @@ export default function SummaryTable({
   primaryDimension,
   rows,
   showContributionRates,
+  showNewCustomerMetrics,
   onOpenBreakdown,
   onOpenDetails,
 }: SummaryTableProps) {
@@ -27,7 +29,10 @@ export default function SummaryTable({
       fixed: 'left',
       width: 50,
     },
-    ...buildReportMetricColumns<ReportSummaryRow>(showContributionRates),
+    ...buildReportMetricColumns<ReportSummaryRow>({
+      showContributionRates,
+      showNewCustomerMetrics,
+    }),
     {
       title: '操作',
       key: 'actions',
@@ -35,7 +40,12 @@ export default function SummaryTable({
       width: 60,
       render: (_, row) => (
         <Space size={4}>
-          <Button type="link" style={{ paddingInline: 4 }} onClick={() => onOpenBreakdown(row)}>
+          <Button
+            type="link"
+            style={{ paddingInline: 4 }}
+            disabled={primaryDimension.key === 'total'}
+            onClick={() => onOpenBreakdown(row)}
+          >
             业绩拆解
           </Button>
           <Button type="link" style={{ paddingInline: 4 }} onClick={() => onOpenDetails(row)}>
