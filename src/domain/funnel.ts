@@ -1,0 +1,349 @@
+import type { TreeSelectProps } from 'antd';
+import type {
+  FunnelCustomerRecord,
+  FunnelCustomerType,
+} from '../data/mockFunnelCustomers';
+import type { Dimension, DimensionKey } from './dimensions';
+
+export type FunnelDimensionKey =
+  | 'total'
+  | 'date'
+  | 'department'
+  | 'consultant'
+  | 'channelCategory'
+  | 'channel';
+
+export type FunnelFilters = {
+  dateRange: [string, string] | null;
+  customerScope: 'all' | 'currentNewCustomers' | 'existingCustomers';
+  customerType: 'all' | 'valid' | 'invalid';
+  departments: string[];
+  consultants: string[];
+  channelCategories: string[];
+  channels: string[];
+};
+
+export type FunnelSummaryRow = {
+  key: string;
+  primaryDimensionValue: string;
+  customerCount: number;
+  dispatchedCustomerCount: number;
+  invitedCustomerCount: number;
+  visitedCustomerCount: number;
+  convertedCustomerCount: number;
+  dispatchRate: number | null;
+  invitationRate: number | null;
+  visitRate: number | null;
+  conversionRate: number | null;
+  dispatchInvitationRate: number | null;
+  inviteVisitRate: number | null;
+  visitConversionRate: number | null;
+};
+
+export type FunnelBreakdownRow = {
+  key: string;
+  breakdownDimensionValue: string;
+  customerCount: number;
+  dispatchedCustomerCount: number;
+  invitedCustomerCount: number;
+  visitedCustomerCount: number;
+  convertedCustomerCount: number;
+  dispatchRate: number | null;
+  invitationRate: number | null;
+  visitRate: number | null;
+  conversionRate: number | null;
+  dispatchInvitationRate: number | null;
+  inviteVisitRate: number | null;
+  visitConversionRate: number | null;
+};
+
+type FunnelBreakdownQuery = {
+  primaryDimension: FunnelDimensionKey;
+  primaryDimensionValue: string;
+  breakdownDimension: FunnelDimensionKey;
+};
+
+export type FunnelTreeDataNode = NonNullable<TreeSelectProps['treeData']>[number];
+
+export type FunnelTreeData = {
+  consultantTree: FunnelTreeDataNode[];
+  channelTree: FunnelTreeDataNode[];
+};
+
+function isInRange(value: string | null, range: [string, string]) {
+  return value !== null && value >= range[0] && value <= range[1];
+}
+
+function ratio(numerator: number, denominator: number) {
+  return denominator === 0 ? null : numerator / denominator;
+}
+
+function countUnique(customers: FunnelCustomerRecord[], getter: (r: FunnelCustomerRecord) => string | null, range: [string, string]) {
+  const ids = new Set<string>();
+  for (const c of customers) {
+    const val = getter(c);
+    if (isInRange(val, range)) {
+      ids.add(c.id);
+    }
+  }
+  return ids.size;
+}
+
+function countAll(customers: FunnelCustomerRecord[]) {
+  const ids = new Set<string>();
+  for (const c of customers) {
+    ids.add(c.id);
+  }
+  return ids.size;
+}
+
+function calculateFunnelMetrics(customers: FunnelCustomerRecord[], dateRange: [string, string]) {
+  const customerCount = countAll(customers);
+  const dispatchedCustomerCount = countUnique(customers, (r) => r.dispatchedAt, dateRange);
+  const invitedCustomerCount = countUnique(customers, (r) => r.invitedAt, dateRange);
+  const visitedCustomerCount = countUnique(customers, (r) => r.visitedAt, dateRange);
+  const convertedCustomerCount = countUnique(customers, (r) => r.convertedAt, dateRange);
+
+  return {
+    customerCount,
+    dispatchedCustomerCount,
+    invitedCustomerCount,
+    visitedCustomerCount,
+    convertedCustomerCount,
+    dispatchRate: ratio(dispatchedCustomerCount, customerCount),
+    invitationRate: ratio(invitedCustomerCount, customerCount),
+    visitRate: ratio(visitedCustomerCount, customerCount),
+    conversionRate: ratio(convertedCustomerCount, customerCount),
+    dispatchInvitationRate: ratio(invitedCustomerCount, dispatchedCustomerCount),
+    inviteVisitRate: ratio(visitedCustomerCount, invitedCustomerCount),
+    visitConversionRate: ratio(convertedCustomerCount, visitedCustomerCount),
+  };
+}
+
+export function filterFunnelCustomers(
+  records: FunnelCustomerRecord[],
+  filters: FunnelFilters,
+): FunnelCustomerRecord[] {
+  return records.filter((record) => {
+    // customer scope: filter by customerCreatedAt relative to dateRange
+    if (filters.dateRange && filters.customerScope === 'currentNewCustomers') {
+      if (
+        record.customerCreatedAt < filters.dateRange[0] ||
+        record.customerCreatedAt > filters.dateRange[1]
+      ) {
+        return false;
+      }
+    }
+    if (filters.dateRange && filters.customerScope === 'existingCustomers') {
+      if (record.customerCreatedAt >= filters.dateRange[0]) {
+        return false;
+      }
+    }
+
+    // customer type
+    if (filters.customerType !== 'all' && record.customerType !== filters.customerType) {
+      return false;
+    }
+
+    // departments / consultants
+    if (
+      filters.departments.length > 0 &&
+      !filters.departments.includes(record.department)
+    ) {
+      return false;
+    }
+    if (
+      filters.consultants.length > 0 &&
+      !filters.consultants.includes(record.consultant)
+    ) {
+      return false;
+    }
+
+    // channel categories / channels
+    if (
+      filters.channelCategories.length > 0 &&
+      !filters.channelCategories.includes(record.channelCategory)
+    ) {
+      return false;
+    }
+    if (
+      filters.channels.length > 0 &&
+      !filters.channels.includes(record.channel)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function getFunnelDimensionValue(record: FunnelCustomerRecord, dimension: FunnelDimensionKey) {
+  if (dimension === 'total') return '汇总';
+  if (dimension === 'date') return record.customerCreatedAt;
+  return record[dimension as keyof FunnelCustomerRecord] as string;
+}
+
+function getFunnelRowKey(dimension: FunnelDimensionKey, value: string) {
+  return dimension === 'total' ? 'total' : `${dimension}:${value}`;
+}
+
+export function buildFunnelSummaryRows(
+  records: FunnelCustomerRecord[],
+  dateRange: [string, string],
+  dimension: FunnelDimensionKey,
+): FunnelSummaryRow[] {
+  if (dimension === 'total') {
+    const metrics = calculateFunnelMetrics(records, dateRange);
+    return [
+      {
+        key: 'total',
+        primaryDimensionValue: '汇总',
+        ...metrics,
+      },
+    ];
+  }
+
+  const groups = new Map<string, FunnelCustomerRecord[]>();
+  for (const record of records) {
+    const value = getFunnelDimensionValue(record, dimension);
+    const current = groups.get(value) ?? [];
+    current.push(record);
+    groups.set(value, current);
+  }
+
+  return [...groups.entries()]
+    .map(([value, groupRecords]) => ({
+      key: getFunnelRowKey(dimension, value),
+      primaryDimensionValue: value,
+      ...calculateFunnelMetrics(groupRecords, dateRange),
+    }))
+    .sort((left, right) => {
+      if (dimension === 'date') {
+        return left.primaryDimensionValue.localeCompare(right.primaryDimensionValue);
+      }
+      return right.customerCount - left.customerCount;
+    });
+}
+
+export function buildFunnelBreakdownRows(
+  records: FunnelCustomerRecord[],
+  dateRange: [string, string],
+  query: FunnelBreakdownQuery,
+): FunnelBreakdownRow[] {
+  const scopedRecords = records.filter(
+    (record) =>
+      getFunnelDimensionValue(record, query.primaryDimension) ===
+      query.primaryDimensionValue,
+  );
+
+  if (query.breakdownDimension === 'total') {
+    return [];
+  }
+
+  const groups = new Map<string, FunnelCustomerRecord[]>();
+  for (const record of scopedRecords) {
+    const value = getFunnelDimensionValue(record, query.breakdownDimension);
+    const current = groups.get(value) ?? [];
+    current.push(record);
+    groups.set(value, current);
+  }
+
+  return [...groups.entries()]
+    .map(([value, groupRecords]) => ({
+      key: getFunnelRowKey(query.breakdownDimension, value),
+      breakdownDimensionValue: value,
+      ...calculateFunnelMetrics(groupRecords, dateRange),
+    }))
+    .sort((left, right) => {
+      if (query.breakdownDimension === 'date') {
+        return left.breakdownDimensionValue.localeCompare(right.breakdownDimensionValue);
+      }
+      return right.customerCount - left.customerCount;
+    });
+}
+
+const funnelDimensions: Dimension[] = [
+  { key: 'total', label: '汇总', group: 'total' },
+  { key: 'date', label: '日期', group: 'time' },
+  { key: 'department', label: '部门', group: 'org', level: 1 },
+  { key: 'consultant', label: '咨询师', group: 'org', level: 2 },
+  { key: 'channelCategory', label: '渠道分类', group: 'source', level: 1 },
+  { key: 'channel', label: '渠道', group: 'source', level: 2 },
+];
+
+function canBreakDown(
+  primaryDimension: Dimension,
+  breakdownDimension: Dimension,
+): boolean {
+  if (
+    primaryDimension.key === breakdownDimension.key ||
+    breakdownDimension.key === 'total'
+  ) {
+    return false;
+  }
+
+  if (primaryDimension.group !== breakdownDimension.group) {
+    return true;
+  }
+
+  if (
+    primaryDimension.level === undefined ||
+    breakdownDimension.level === undefined
+  ) {
+    return false;
+  }
+
+  return primaryDimension.level < breakdownDimension.level;
+}
+
+export function getFunnelBreakdownDimensions(
+  primaryKey: FunnelDimensionKey,
+): Dimension[] {
+  if (primaryKey === 'total') {
+    return [];
+  }
+
+  const primaryDimension = funnelDimensions.find((d) => d.key === primaryKey)!;
+  return funnelDimensions.filter((dimension) =>
+    canBreakDown(primaryDimension, dimension),
+  );
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values)].sort((left, right) =>
+    left.localeCompare(right, 'zh-Hans-CN'),
+  );
+}
+
+export function buildFunnelTreeData(
+  records: FunnelCustomerRecord[],
+): FunnelTreeData {
+  const deptMap = new Map<string, Set<string>>();
+  const channelCatMap = new Map<string, Set<string>>();
+
+  for (const r of records) {
+    if (!deptMap.has(r.department)) deptMap.set(r.department, new Set());
+    deptMap.get(r.department)!.add(r.consultant);
+
+    if (!channelCatMap.has(r.channelCategory))
+      channelCatMap.set(r.channelCategory, new Set());
+    channelCatMap.get(r.channelCategory)!.add(r.channel);
+  }
+
+  function toTree(map: Map<string, Set<string>>): FunnelTreeDataNode[] {
+    return [...map.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'zh-Hans-CN'))
+      .map(([parent, children]) => ({
+        title: parent,
+        value: parent,
+        children: [...children]
+          .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
+          .map((child) => ({ title: child, value: child })),
+      }));
+  }
+
+  return {
+    consultantTree: toTree(deptMap),
+    channelTree: toTree(channelCatMap),
+  };
+}
