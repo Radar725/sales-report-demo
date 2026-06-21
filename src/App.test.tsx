@@ -195,5 +195,25 @@ describe('App', () => {
     expect(screen.getByRole('dialog', { name: '汇总 · 业绩明细' })).toBeInTheDocument();
   });
 
+  it('uses the same dynamic metric names in the breakdown drawer', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await setDateRange(user);
+    await selectOption(user, '客户统计范围', '老客');
+    await selectOption(user, '成交类型', '复购');
+    await applyFilters(user);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
+
+    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    for (const column of [
+      '老客复购上报业绩', '老客复购成交单量', '老客复购成交客户数',
+      '老客复购客单价', '老客复购业绩占比',
+      '老客复购成交单量占比', '老客复购成交客户占比',
+    ]) {
+      expect(within(drawer).getByRole('columnheader', { name: column })).toBeInTheDocument();
+    }
+  });
+
 });
 
