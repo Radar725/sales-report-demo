@@ -65,7 +65,7 @@ const defaultFiltersReset: SalesDashboardFilters = {
   channels: [],
   projectCategories: [],
   projects: [],
-  customerScope: 'all',
+  customerScope: 'currentNewCustomers',
   customerPools: [],
   cities: [],
   institutions: [],

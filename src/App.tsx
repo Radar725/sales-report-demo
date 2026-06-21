@@ -25,7 +25,7 @@ const defaultFilters: SalesDashboardFilters = {
   channels: [],
   projectCategories: [],
   projects: [],
-  customerScope: 'all',
+  customerScope: 'currentNewCustomers',
   customerPools: [],
   cities: [],
   institutions: [],
@@ -42,14 +42,6 @@ export default function App() {
     () => filterDealRecords(mockDeals, createBaselineFilters(filters)),
     [filters],
   );
-  const newCustomerMetricRecords = useMemo(
-    () => filterDealRecords(mockDeals, { ...filters, dealType: 'all' }),
-    [filters],
-  );
-  const showContributionRates = useMemo(
-    () => filters.customerScope !== 'all' || filters.dealType !== 'all',
-    [filters.customerScope, filters.dealType],
-  );
   const primaryDimensionConfig = getDimension(primaryDimension);
   const summaryRows = useMemo(
     () =>
@@ -57,9 +49,8 @@ export default function App() {
         filteredRecords,
         baselineRecords,
         primaryDimension,
-        newCustomerMetricRecords,
       ),
-    [filteredRecords, baselineRecords, newCustomerMetricRecords, primaryDimension],
+    [filteredRecords, baselineRecords, primaryDimension],
   );
   const detailRecords = useMemo(
     () =>
@@ -111,8 +102,7 @@ export default function App() {
         <SummaryTable
           primaryDimension={primaryDimensionConfig}
           rows={summaryRows}
-          showContributionRates={showContributionRates}
-          showNewCustomerMetrics={filters.customerScope === 'currentNewCustomers'}
+          filters={{ customerScope: filters.customerScope, dealType: filters.dealType }}
           onOpenBreakdown={setSelectedBreakdownRow}
           onOpenDetails={setSelectedDetailRow}
         />
@@ -122,11 +112,9 @@ export default function App() {
         open={selectedBreakdownRow !== null}
         records={filteredRecords}
         baselineRecords={baselineRecords}
-        newCustomerMetricRecords={newCustomerMetricRecords}
         primaryDimension={primaryDimension}
         row={selectedBreakdownRow}
-        showContributionRates={showContributionRates}
-        showNewCustomerMetrics={filters.customerScope === 'currentNewCustomers'}
+        filters={{ customerScope: filters.customerScope, dealType: filters.dealType }}
         onClose={() => setSelectedBreakdownRow(null)}
       />
 

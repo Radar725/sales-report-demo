@@ -2,13 +2,12 @@ import { Button, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Dimension } from '../domain/dimensions';
 import type { ReportSummaryRow } from '../domain/analytics';
-import { buildReportMetricColumns } from '../domain/reportMetrics';
+import { buildReportMetricColumns, type ReportColumnFilters } from '../domain/reportMetrics';
 
 type SummaryTableProps = {
   primaryDimension: Dimension;
   rows: ReportSummaryRow[];
-  showContributionRates: boolean;
-  showNewCustomerMetrics: boolean;
+  filters: ReportColumnFilters;
   onOpenBreakdown: (row: ReportSummaryRow) => void;
   onOpenDetails: (row: ReportSummaryRow) => void;
 };
@@ -16,8 +15,7 @@ type SummaryTableProps = {
 export default function SummaryTable({
   primaryDimension,
   rows,
-  showContributionRates,
-  showNewCustomerMetrics,
+  filters,
   onOpenBreakdown,
   onOpenDetails,
 }: SummaryTableProps) {
@@ -27,17 +25,14 @@ export default function SummaryTable({
       dataIndex: 'primaryDimensionValue',
       key: 'primaryDimensionValue',
       fixed: 'left',
-      width: 50,
+      width: 140,
     },
-    ...buildReportMetricColumns<ReportSummaryRow>({
-      showContributionRates,
-      showNewCustomerMetrics,
-    }),
+    ...buildReportMetricColumns<ReportSummaryRow>(filters),
     {
       title: '操作',
       key: 'actions',
       fixed: 'right',
-      width: 60,
+      width: 152,
       render: (_, row) => (
         <Space size={4}>
           <Button
@@ -58,12 +53,13 @@ export default function SummaryTable({
 
   return (
     <Table
+      className="report-table"
       rowKey="key"
       columns={columns}
       dataSource={rows}
       pagination={false}
       bordered
-      scroll={{ x: 800 }}
+      scroll={{ x: 1112 }}
     />
   );
 }

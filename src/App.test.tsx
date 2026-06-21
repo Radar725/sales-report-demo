@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from './App';
@@ -6,7 +6,12 @@ import App from './App';
 async function selectOption(user: ReturnType<typeof userEvent.setup>, label: string, option: string) {
   const formItem = screen.getByText(label).closest('.ant-form-item')!;
   fireEvent.mouseDown(formItem.querySelector('.ant-select-selector')!);
-  await user.click(await screen.findByText(option));
+  await waitFor(() => {
+    expect(document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toBeTruthy();
+  });
+  const visibleDropdown = document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)') as HTMLElement;
+  const dropdownOption = within(visibleDropdown).getByText(option);
+  await user.click(dropdownOption);
 }
 
 async function applyFilters(user: ReturnType<typeof userEvent.setup>) {
@@ -34,30 +39,39 @@ describe('App', () => {
     expect(screen.getByRole('combobox', { name: '主维度' })).toBeInTheDocument();
   });
 
-  it('shows only the four base columns by default', () => {
+  it('defaults customer scope to new customers', () => {
     render(<App />);
-
-    expect(screen.getByRole('columnheader', { name: '上报业绩' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '成交单量' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '成交客户数' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '客单价' })).toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: '新客数' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: '业绩占比' })).not.toBeInTheDocument();
+    expect(screen.getByText('客户统计范围').closest('.ant-form-item')).toHaveTextContent('新客');
   });
 
-  it('shows only the four base columns in the breakdown drawer by default', async () => {
+  it('always shows the seven new-customer metric columns by default', () => {
+    render(<App />);
+
+    for (const column of [
+      '新客上报业绩', '新客成交单量', '新客成交客户数', '新客客单价',
+      '新客业绩占比', '新客成交单量占比', '新客成交客户占比',
+    ]) {
+      expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
+    }
+    expect(screen.queryByRole('columnheader', { name: '新客数' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '新客成交率' })).not.toBeInTheDocument();
+  });
+
+  it('uses combined prefixes in the main table and shows 100 percent for all scope', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
-    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    await setDateRange(user);
+    await selectOption(user, '客户统计范围', '新客');
+    await selectOption(user, '成交类型', '新诊');
+    await applyFilters(user);
+    expect(screen.getByRole('columnheader', { name: '新客新诊成交客户占比' })).toBeInTheDocument();
 
-    expect(within(drawer).getByRole('columnheader', { name: '上报业绩' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('columnheader', { name: '成交单量' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('columnheader', { name: '成交客户数' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('columnheader', { name: '客单价' })).toBeInTheDocument();
-    expect(within(drawer).queryByRole('columnheader', { name: '新客数' })).not.toBeInTheDocument();
-    expect(within(drawer).queryByRole('columnheader', { name: '业绩占比' })).not.toBeInTheDocument();
+    await selectOption(user, '客户统计范围', '全部');
+    await selectOption(user, '成交类型', '全部');
+    await applyFilters(user);
+    expect(screen.getByRole('columnheader', { name: '上报业绩' })).toBeInTheDocument();
+    expect(screen.getAllByText('100.0%').length).toBeGreaterThanOrEqual(3);
   });
 
   it('shows only old customer records when old customers are selected', async () => {
@@ -86,6 +100,8 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await setDateRange(user);
+    await applyFilters(user);
     await selectPrimaryDimension(user, '部门');
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
@@ -96,6 +112,8 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await setDateRange(user);
+    await applyFilters(user);
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     expect(within(screen.getByRole('dialog', { name: /业绩拆解/ })).queryByRole('tab', { name: '部门' })).not.toBeInTheDocument();
@@ -105,6 +123,8 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await setDateRange(user);
+    await applyFilters(user);
     await selectPrimaryDimension(user, '项目分类');
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
     expect(within(screen.getByRole('dialog', { name: /业绩拆解/ })).getByRole('tab', { name: '项目' })).toBeInTheDocument();
@@ -147,64 +167,17 @@ describe('App', () => {
 
     await setDateRange(user);
     await applyFilters(user);
-    await user.click(screen.getAllByRole('button', { name: '业绩明细' })[0]);
+    const detailButtons = await screen.findAllByRole('button', { name: '业绩明细' });
+    await user.click(detailButtons[0]);
 
-    const drawer = screen.getByRole('dialog', { name: '张敏 · 业绩明细' });
+    const drawer = await screen.findByRole('dialog');
+    expect(drawer).toHaveTextContent('业绩明细');
     for (const column of [
       '成交金额', '合作比例', '合作业绩', '成交渠道', '合作人名称', '确认金额', '确认日期',
       '客户ID', '电话', '成交项目', '业绩确认状态', '成交机构', '成交日期', '上报时间',
     ]) {
       expect(within(drawer).getByRole('columnheader', { name: column })).toBeInTheDocument();
     }
-  });
-
-  it('shows new customer columns only when customer scope is new customers', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    expect(screen.queryByRole('columnheader', { name: '新客数' })).not.toBeInTheDocument();
-    await selectOption(user, '客户统计范围', '新客');
-    await applyFilters(user);
-
-    expect(screen.getByRole('columnheader', { name: '新客数' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: '新客成交率' })).toBeInTheDocument();
-  });
-
-  it('shows contribution rate columns for restricted new customer and new diagnosis results', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await setDateRange(user);
-    await selectOption(user, '客户统计范围', '新客');
-    await selectOption(user, '成交类型', '新诊');
-    await applyFilters(user);
-
-    for (const column of ['业绩占比', '单量占比', '客户占比']) {
-      expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
-    }
-
-    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
-    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
-    for (const column of ['业绩占比', '单量占比', '客户占比']) {
-      expect(within(drawer).getByRole('columnheader', { name: column })).toBeInTheDocument();
-    }
-  });
-
-  it('keeps new customer metrics independent from the deal type filter', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
-    await user.clear(inputs[0]);
-    await user.type(inputs[0], '2026-06-01');
-    await user.clear(inputs[1]);
-    await user.type(inputs[1], '2026-06-30');
-    await selectOption(user, '客户统计范围', '新客');
-    await selectOption(user, '成交类型', '新诊');
-    await applyFilters(user);
-
-    const zhangMinRow = screen.getByRole('cell', { name: '张敏' }).closest('tr')!;
-    expect(within(zhangMinRow).getByText('4')).toBeInTheDocument();
   });
 
   it('shows a single total row, disables breakdown, and opens total details', async () => {
@@ -222,21 +195,5 @@ describe('App', () => {
     expect(screen.getByRole('dialog', { name: '汇总 · 业绩明细' })).toBeInTheDocument();
   });
 
-  it('shows new customer columns in the breakdown drawer', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
-    await user.clear(inputs[0]);
-    await user.type(inputs[0], '2026-06-01');
-    await user.clear(inputs[1]);
-    await user.type(inputs[1], '2026-06-30');
-    await selectOption(user, '客户统计范围', '新客');
-    await applyFilters(user);
-    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
-
-    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
-    expect(within(drawer).getByRole('columnheader', { name: '新客数' })).toBeInTheDocument();
-    expect(within(drawer).getByRole('columnheader', { name: '新客成交率' })).toBeInTheDocument();
-  });
 });
+

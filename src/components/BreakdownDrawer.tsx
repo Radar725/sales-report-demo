@@ -9,18 +9,16 @@ import {
   type ReportSummaryRow,
 } from '../domain/analytics';
 import { type DimensionKey, getBreakdownDimensions } from '../domain/dimensions';
-import { buildReportMetricColumns } from '../domain/reportMetrics';
+import { buildReportMetricColumns, type ReportColumnFilters } from '../domain/reportMetrics';
 import { detailColumns } from './detailColumns';
 
 type BreakdownDrawerProps = {
   open: boolean;
   records: DealRecord[];
   baselineRecords: DealRecord[];
-  newCustomerMetricRecords: DealRecord[];
   primaryDimension: DimensionKey;
   row: ReportSummaryRow | null;
-  showContributionRates: boolean;
-  showNewCustomerMetrics: boolean;
+  filters: ReportColumnFilters;
   onClose: () => void;
 };
 
@@ -28,11 +26,9 @@ export default function BreakdownDrawer({
   open,
   records,
   baselineRecords,
-  newCustomerMetricRecords,
   primaryDimension,
   row,
-  showContributionRates,
-  showNewCustomerMetrics,
+  filters,
   onClose,
 }: BreakdownDrawerProps) {
   const breakdownDimensions = getBreakdownDimensions(primaryDimension);
@@ -55,7 +51,7 @@ export default function BreakdownDrawer({
                 primaryDimension,
                 primaryDimensionValue: row.primaryDimensionValue,
                 breakdownDimension: breakdownDimension.key,
-              }, newCustomerMetricRecords);
+              });
               const columns: ColumnsType<ReportBreakdownRow> = [
                 {
                   title: breakdownDimension.label,
@@ -64,10 +60,7 @@ export default function BreakdownDrawer({
                   fixed: 'left',
                   width: 140,
                 },
-                ...buildReportMetricColumns<ReportBreakdownRow>({
-                  showContributionRates,
-                  showNewCustomerMetrics,
-                }),
+                ...buildReportMetricColumns<ReportBreakdownRow>(filters),
                 {
                   title: '操作',
                   key: 'actions',
@@ -102,12 +95,13 @@ export default function BreakdownDrawer({
                 children: (
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <Table
+                      className="report-table"
                       rowKey="key"
                       columns={columns}
                       dataSource={dataSource}
                       pagination={false}
                       bordered
-                      scroll={{ x: 800 }}
+                      scroll={{ x: 1060 }}
                     />
                   </Space>
                 ),
