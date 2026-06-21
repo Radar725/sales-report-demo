@@ -1,16 +1,26 @@
 import type { ColumnsType } from 'antd/es/table';
 import { formatMetricValue, type MetricValue } from './metrics';
+import type { CustomerScopeFilter, DealTypeFilter } from './filters';
+
+export type ReportColumnFilters = {
+  customerScope: CustomerScopeFilter;
+  dealType: DealTypeFilter;
+};
 
 export type ReportMetricValue = Pick<
   MetricValue,
   'reportedAmount' | 'dealCount' | 'customerCount' | 'averageDealAmount'
 > & {
-  newCustomerCount: number | null;
-  newCustomerConversionRate: number | null;
   reportedAmountRate: number | null;
   dealCountRate: number | null;
   customerCountRate: number | null;
 };
+
+export const REPORT_METRIC_WIDTHS = {
+  amount: 132,
+  count: 104,
+  rate: 116,
+} as const;
 
 type ReportMetricKey = keyof ReportMetricValue;
 type ReportMetricFormat = 'amount' | 'integer' | 'percent';
@@ -22,45 +32,45 @@ type ReportMetricDefinition = {
   width: number;
 };
 
-const baseMetrics: ReportMetricDefinition[] = [
-  { key: 'reportedAmount', label: '上报业绩', format: 'amount', width: 100 },
-  { key: 'dealCount', label: '成交单量', format: 'integer', width: 70 },
-  { key: 'customerCount', label: '成交客户数', format: 'integer', width: 80 },
-  { key: 'averageDealAmount', label: '客单价', format: 'amount', width: 90 },
-];
+const customerScopeLabels: Record<CustomerScopeFilter, string> = {
+  all: '',
+  currentNewCustomers: '新客',
+  existingCustomers: '老客',
+};
 
-const newCustomerMetrics: ReportMetricDefinition[] = [
-  { key: 'newCustomerCount', label: '新客数', format: 'integer', width: 80 },
-  { key: 'newCustomerConversionRate', label: '新客成交率', format: 'percent', width: 96 },
+const dealTypeLabels: Record<DealTypeFilter, string> = {
+  all: '',
+  newDiagnosis: '新诊',
+  repurchase: '复购',
+};
+
+function getMetricLabel(label: string, filters: ReportColumnFilters) {
+  return `${customerScopeLabels[filters.customerScope]}${dealTypeLabels[filters.dealType]}${label}`;
+}
+
+const baseMetrics: ReportMetricDefinition[] = [
+  { key: 'reportedAmount', label: '上报业绩', format: 'amount', width: REPORT_METRIC_WIDTHS.amount },
+  { key: 'dealCount', label: '成交单量', format: 'integer', width: REPORT_METRIC_WIDTHS.count },
+  { key: 'customerCount', label: '成交客户数', format: 'integer', width: REPORT_METRIC_WIDTHS.count },
+  { key: 'averageDealAmount', label: '客单价', format: 'amount', width: REPORT_METRIC_WIDTHS.amount },
 ];
 
 const contributionMetrics: ReportMetricDefinition[] = [
-  { key: 'reportedAmountRate', label: '业绩占比', format: 'percent', width: 70 },
-  { key: 'dealCountRate', label: '单量占比', format: 'percent', width: 70 },
-  { key: 'customerCountRate', label: '客户占比', format: 'percent', width: 70 },
+  { key: 'reportedAmountRate', label: '业绩占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+  { key: 'dealCountRate', label: '成交单量占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+  { key: 'customerCountRate', label: '成交客户占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
 ];
 
 export function buildReportMetricColumns<T extends ReportMetricValue>(
-  options: { showContributionRates: boolean; showNewCustomerMetrics: boolean },
+  filters: ReportColumnFilters,
 ): ColumnsType<T> {
-  const metrics = [
-    baseMetrics[0],
-    ...(options.showNewCustomerMetrics ? newCustomerMetrics : []),
-    ...baseMetrics.slice(1),
-    ...(options.showContributionRates ? contributionMetrics : []),
-  ];
-
-  return metrics.map((metric) => ({
-    title: metric.label,
+  return [...baseMetrics, ...contributionMetrics].map((metric) => ({
+    title: getMetricLabel(metric.label, filters),
     dataIndex: metric.key,
     key: metric.key,
     align: 'right',
     width: metric.width,
-    sorter: (left, right) => {
-      const leftValue = left[metric.key] ?? 0;
-      const rightValue = right[metric.key] ?? 0;
-      return leftValue - rightValue;
-    },
+    sorter: (left: T, right: T) => (left[metric.key] ?? 0) - (right[metric.key] ?? 0),
     render: (value: number | null) =>
       value === null ? '—' : formatMetricValue(value, metric.format),
   }));

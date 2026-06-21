@@ -1,18 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buildReportMetricColumns } from './reportMetrics';
+import { buildReportMetricColumns, REPORT_METRIC_WIDTHS } from './reportMetrics';
+
+const allFilters = { customerScope: 'all', dealType: 'all' } as const;
 
 describe('report metric columns', () => {
-  it('shows only the four base report metrics by default', () => {
-    expect(buildReportMetricColumns({ showContributionRates: false, showNewCustomerMetrics: false }).map((column) => column.key)).toEqual([
-      'reportedAmount',
-      'dealCount',
-      'customerCount',
-      'averageDealAmount',
-    ]);
-  });
+  it('always exposes the seven report metrics with semantic widths', () => {
+    const columns = buildReportMetricColumns(allFilters);
 
-  it('appends three contribution ratios for a restricted scope', () => {
-    expect(buildReportMetricColumns({ showContributionRates: true, showNewCustomerMetrics: false }).map((column) => column.key)).toEqual([
+    expect(columns.map((column) => column.key)).toEqual([
       'reportedAmount',
       'dealCount',
       'customerCount',
@@ -21,25 +16,32 @@ describe('report metric columns', () => {
       'dealCountRate',
       'customerCountRate',
     ]);
-  });
-
-  it('inserts new customer metrics immediately after reported amount when requested', () => {
-    expect(buildReportMetricColumns({ showContributionRates: false, showNewCustomerMetrics: true }).map((column) => column.key)).toEqual([
-      'reportedAmount',
-      'newCustomerCount',
-      'newCustomerConversionRate',
-      'dealCount',
-      'customerCount',
-      'averageDealAmount',
+    expect(columns.map((column) => column.width)).toEqual([
+      REPORT_METRIC_WIDTHS.amount,
+      REPORT_METRIC_WIDTHS.count,
+      REPORT_METRIC_WIDTHS.count,
+      REPORT_METRIC_WIDTHS.amount,
+      REPORT_METRIC_WIDTHS.rate,
+      REPORT_METRIC_WIDTHS.rate,
+      REPORT_METRIC_WIDTHS.rate,
     ]);
   });
 
-  it('renders an unavailable new customer metric as an em dash', () => {
-    const column = buildReportMetricColumns({
-      showContributionRates: false,
-      showNewCustomerMetrics: true,
-    }).find((item) => item.key === 'newCustomerCount');
+  it('keeps original metric names when both filters are all', () => {
+    expect(buildReportMetricColumns(allFilters).map((column) => column.title)).toEqual([
+      '上报业绩', '成交单量', '成交客户数', '客单价',
+      '业绩占比', '成交单量占比', '成交客户占比',
+    ]);
+  });
 
-    expect(column?.render?.(null, {} as never, 0)).toBe('—');
+  it('prefixes every metric with customer scope then deal type', () => {
+    expect(
+      buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'newDiagnosis' })
+        .map((column) => column.title),
+    ).toEqual([
+      '新客新诊上报业绩', '新客新诊成交单量', '新客新诊成交客户数',
+      '新客新诊客单价', '新客新诊业绩占比',
+      '新客新诊成交单量占比', '新客新诊成交客户占比',
+    ]);
   });
 });
