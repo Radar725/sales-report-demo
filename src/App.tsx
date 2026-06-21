@@ -17,7 +17,7 @@ import { createBaselineFilters, filterDealRecords, type SalesDashboardFilters } 
 const today = dayjs().format('YYYY-MM-DD');
 
 const defaultFilters: SalesDashboardFilters = {
-  dateRange: [today, today],
+  dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), today],
   departments: [],
   consultants: [],
   dealType: 'all',

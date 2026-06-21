@@ -54,7 +54,7 @@ const presets: NonNullable<
   { label: '近30天', value: [dayjs().subtract(30, 'day'), dayjs()] },
 ];
 
-const todayRange: [string, string] = [dayjs().format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
+const todayRange: [string, string] = [dayjs().startOf('month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
 
 const defaultFiltersReset: SalesDashboardFilters = {
   dateRange: todayRange,
