@@ -69,4 +69,21 @@ describe('report metric columns', () => {
       '新客新诊成交单量占比', '新客新诊成交客户占比',
     ]);
   });
+
+  it('adds customer-scoped repurchase total columns only for repurchase', () => {
+    const repurchase = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'repurchase' });
+    expect(repurchase.slice(-3).map((column) => column.title)).toEqual([
+      '新客复购客户占总复购比', '新客复购单量占总复购比', '新客复购业绩占总复购比',
+    ]);
+    expect(buildReportMetricColumns({ customerScope: 'existingCustomers', dealType: 'newDiagnosis' })
+      .map((column) => column.key)).not.toContain('repurchaseCustomerTotalRate');
+  });
+
+  it('renders repurchase total values without comparison deltas', () => {
+    const columns = buildReportMetricColumns({ customerScope: 'all', dealType: 'repurchase' }, true);
+    const column = columns.find((item) => item.key === 'repurchaseCustomerTotalRate')!;
+    render(<>{column.render?.(0.25, { repurchaseCustomerTotalRate: 0.25, comparison: { repurchaseCustomerTotalRate: 0.5 } }, 0)}</>);
+    expect(screen.getByText('25.0%')).toBeInTheDocument();
+    expect(screen.queryByText(/↑|↓/)).not.toBeInTheDocument();
+  });
 });

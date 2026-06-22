@@ -14,6 +14,9 @@ export type ReportMetricValue = Pick<
   reportedAmountRate: number | null;
   dealCountRate: number | null;
   customerCountRate: number | null;
+  repurchaseCustomerTotalRate: number | null;
+  repurchaseDealCountTotalRate: number | null;
+  repurchaseAmountTotalRate: number | null;
 };
 
 export type ReportMetricKey = keyof ReportMetricValue;
@@ -31,6 +34,8 @@ type ReportMetricDefinition = {
   label: string;
   format: ReportMetricFormat;
   width: number;
+  customerScopePrefixOnly?: boolean;
+  participatesInComparison?: boolean;
 };
 
 type ComparableRecord = {
@@ -49,7 +54,10 @@ const dealTypeLabels: Record<DealTypeFilter, string> = {
   repurchase: '复购',
 };
 
-function getMetricLabel(label: string, filters: ReportColumnFilters) {
+function getMetricLabel(label: string, filters: ReportColumnFilters, metric: ReportMetricDefinition) {
+  if (metric.customerScopePrefixOnly) {
+    return `${customerScopeLabels[filters.customerScope]}${label}`;
+  }
   return `${customerScopeLabels[filters.customerScope]}${dealTypeLabels[filters.dealType]}${label}`;
 }
 
@@ -100,18 +108,30 @@ const contributionMetrics: ReportMetricDefinition[] = [
   { key: 'customerCountRate', label: '成交客户占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
 ];
 
+const repurchaseTotalContributionMetrics: ReportMetricDefinition[] = [
+  { key: 'repurchaseCustomerTotalRate', label: '复购客户占总复购比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true, participatesInComparison: false },
+  { key: 'repurchaseDealCountTotalRate', label: '复购单量占总复购比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true, participatesInComparison: false },
+  { key: 'repurchaseAmountTotalRate', label: '复购业绩占总复购比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true, participatesInComparison: false },
+];
+
 export function buildReportMetricColumns<T extends ReportMetricValue & ComparableRecord>(
   filters: ReportColumnFilters,
   hasComparison = false,
 ): ColumnsType<T> {
-  return [...baseMetrics, ...contributionMetrics].map((metric) => ({
-    title: getMetricLabel(metric.label, filters),
+  const metrics = [
+    ...baseMetrics,
+    ...contributionMetrics,
+    ...(filters.dealType === 'repurchase' ? repurchaseTotalContributionMetrics : []),
+  ];
+
+  return metrics.map((metric) => ({
+    title: getMetricLabel(metric.label, filters, metric),
     dataIndex: metric.key,
     key: metric.key,
     align: 'right',
     width: metric.width,
     sorter: (left: T, right: T) => (left[metric.key] ?? 0) - (right[metric.key] ?? 0),
     render: (value: number | null, record: T) =>
-      renderMetricCell(value, metric, record, hasComparison),
+      renderMetricCell(value, metric, record, hasComparison && metric.participatesInComparison !== false),
   }));
 }
