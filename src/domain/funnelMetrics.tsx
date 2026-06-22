@@ -1,34 +1,10 @@
 import type { ColumnsType } from 'antd/es/table';
+import type { FunnelMetricKey } from './funnel';
 import { formatMetricValue, formatPercent } from './metrics';
 
-export type FunnelColumnFilters = {
-  customerScope: 'all' | 'currentNewCustomers' | 'existingCustomers';
-  customerType: 'all' | 'valid' | 'invalid';
+type ComparableRecord = {
+  comparison?: Partial<Record<FunnelMetricKey, number | null>> | null;
 };
-
-export type FunnelMetricKey =
-  | 'customerCount'
-  | 'dispatchedCustomerCount'
-  | 'invitedCustomerCount'
-  | 'visitedCustomerCount'
-  | 'convertedCustomerCount'
-  | 'dispatchRate'
-  | 'invitationRate'
-  | 'visitRate'
-  | 'conversionRate'
-  | 'dispatchInvitationRate'
-  | 'inviteVisitRate'
-  | 'visitConversionRate';
-
-const scopeLabel: Record<FunnelColumnFilters['customerScope'], string> = {
-  all: '',
-  currentNewCustomers: '新客',
-  existingCustomers: '老客',
-};
-
-function prefix(filters: FunnelColumnFilters) {
-  return scopeLabel[filters.customerScope];
-}
 
 type FunnelMetricDef = {
   key: FunnelMetricKey;
@@ -37,23 +13,20 @@ type FunnelMetricDef = {
   width: number;
 };
 
-type ComparableRecord = {
-  comparison?: Partial<Record<FunnelMetricKey, number | null>> | null;
-};
-
 const funnelMetrics: FunnelMetricDef[] = [
-  { key: 'customerCount', label: '客户数', format: 'integer', width: 104 },
-  { key: 'dispatchedCustomerCount', label: '派单客户数', format: 'integer', width: 120 },
-  { key: 'invitedCustomerCount', label: '邀约客户数', format: 'integer', width: 120 },
-  { key: 'visitedCustomerCount', label: '到院客户数', format: 'integer', width: 120 },
-  { key: 'convertedCustomerCount', label: '成交客户数', format: 'integer', width: 120 },
+  { key: 'recordedCustomerCount', label: '录单客户数', format: 'integer', width: 120 },
+  { key: 'addedWechatCustomerCount', label: '已加微客户数', format: 'integer', width: 132 },
+  { key: 'dispatchedCustomerCount', label: '已派单客户数', format: 'integer', width: 132 },
+  { key: 'invitedCustomerCount', label: '已邀约客户数', format: 'integer', width: 132 },
+  { key: 'visitedCustomerCount', label: '已到院客户数', format: 'integer', width: 132 },
+  { key: 'convertedCustomerCount', label: '已成交客户数', format: 'integer', width: 132 },
+  { key: 'repurchasedCustomerCount', label: '已复购客户数', format: 'integer', width: 132 },
+  { key: 'addedWechatRate', label: '加微率', format: 'percent', width: 104 },
   { key: 'dispatchRate', label: '派单率', format: 'percent', width: 104 },
   { key: 'invitationRate', label: '邀约率', format: 'percent', width: 104 },
   { key: 'visitRate', label: '到院率', format: 'percent', width: 104 },
   { key: 'conversionRate', label: '成交率', format: 'percent', width: 104 },
-  { key: 'dispatchInvitationRate', label: '派单邀约率', format: 'percent', width: 120 },
-  { key: 'inviteVisitRate', label: '邀约到院率', format: 'percent', width: 120 },
-  { key: 'visitConversionRate', label: '到院成交率', format: 'percent', width: 120 },
+  { key: 'repurchaseRate', label: '复购率', format: 'percent', width: 104 },
 ];
 
 function renderMetricCell(
@@ -92,10 +65,9 @@ function renderMetricCell(
 
 export function buildFunnelMetricColumns<
   T extends Record<string, unknown> & ComparableRecord,
->(filters: FunnelColumnFilters, hasComparison = false): ColumnsType<T> {
-  const p = prefix(filters);
+>(hasComparison = false): ColumnsType<T> {
   return funnelMetrics.map((metric) => ({
-    title: `${p}${metric.label}`,
+    title: metric.label,
     dataIndex: metric.key,
     key: metric.key,
     align: 'right' as const,

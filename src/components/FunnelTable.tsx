@@ -1,15 +1,11 @@
 import { Button, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { FunnelSummaryRow } from '../domain/funnel';
-import {
-  buildFunnelMetricColumns,
-  type FunnelColumnFilters,
-} from '../domain/funnelMetrics';
+import { buildFunnelMetricColumns } from '../domain/funnelMetrics';
 
 type FunnelTableProps = {
   primaryDimension: { key: string; label: string };
   rows: FunnelSummaryRow[];
-  filters: FunnelColumnFilters;
   hasComparison: boolean;
   onOpenBreakdown: (row: FunnelSummaryRow) => void;
 };
@@ -17,7 +13,6 @@ type FunnelTableProps = {
 export function FunnelTable({
   primaryDimension,
   rows,
-  filters,
   hasComparison,
   onOpenBreakdown,
 }: FunnelTableProps) {
@@ -29,7 +24,7 @@ export function FunnelTable({
       fixed: 'left',
       width: 140,
     },
-    ...buildFunnelMetricColumns<FunnelSummaryRow>(filters, hasComparison),
+    ...buildFunnelMetricColumns<FunnelSummaryRow>(hasComparison),
     {
       title: '操作',
       key: 'actions',
@@ -56,7 +51,7 @@ export function FunnelTable({
       dataSource={rows}
       pagination={false}
       bordered
-      scroll={{ x: 1600 }}
+      scroll={{ x: 1800 }}
     />
   );
 }
