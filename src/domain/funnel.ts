@@ -4,6 +4,7 @@ import type {
   FunnelCustomerType,
 } from '../data/mockFunnelCustomers';
 import type { Dimension, DimensionKey } from './dimensions';
+import { calculateChange, getDateComparisonKey } from './comparison';
 
 export type FunnelDimensionKey =
   | 'total'
@@ -40,6 +41,22 @@ export type FunnelSummaryRow = {
   visitConversionRate: number | null;
 };
 
+export type FunnelMetricKey =
+  | 'customerCount'
+  | 'dispatchedCustomerCount'
+  | 'invitedCustomerCount'
+  | 'visitedCustomerCount'
+  | 'convertedCustomerCount'
+  | 'dispatchRate'
+  | 'invitationRate'
+  | 'visitRate'
+  | 'conversionRate'
+  | 'dispatchInvitationRate'
+  | 'inviteVisitRate'
+  | 'visitConversionRate';
+
+export type FunnelComparisonValues = Partial<Record<FunnelMetricKey, number | null>>;
+
 export type FunnelBreakdownRow = {
   key: string;
   breakdownDimensionValue: string;
@@ -55,6 +72,14 @@ export type FunnelBreakdownRow = {
   dispatchInvitationRate: number | null;
   inviteVisitRate: number | null;
   visitConversionRate: number | null;
+};
+
+export type FunnelComparableSummaryRow = FunnelSummaryRow & {
+  comparison: FunnelComparisonValues;
+};
+
+export type FunnelComparableBreakdownRow = FunnelBreakdownRow & {
+  comparison: FunnelComparisonValues;
 };
 
 type FunnelBreakdownQuery = {
@@ -260,6 +285,81 @@ export function buildFunnelBreakdownRows(
       }
       return right.customerCount - left.customerCount;
     });
+}
+
+const FUNNEL_METRIC_KEYS: FunnelMetricKey[] = [
+  'customerCount',
+  'dispatchedCustomerCount',
+  'invitedCustomerCount',
+  'visitedCustomerCount',
+  'convertedCustomerCount',
+  'dispatchRate',
+  'invitationRate',
+  'visitRate',
+  'conversionRate',
+  'dispatchInvitationRate',
+  'inviteVisitRate',
+  'visitConversionRate',
+];
+
+function isDateDimensionValue(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function getComparisonLookupKey(value: string, isDateDimension: boolean) {
+  return isDateDimension ? getDateComparisonKey(value) : value;
+}
+
+function getFunnelRowDimensionValue(
+  row: FunnelSummaryRow | FunnelBreakdownRow,
+  valueKey: 'primaryDimensionValue' | 'breakdownDimensionValue',
+) {
+  return valueKey === 'primaryDimensionValue'
+    ? (row as FunnelSummaryRow).primaryDimensionValue
+    : (row as FunnelBreakdownRow).breakdownDimensionValue;
+}
+
+function buildFunnelComparisonValues<T extends FunnelSummaryRow | FunnelBreakdownRow>(
+  currentRow: T,
+  comparisonRow: T | undefined,
+): FunnelComparisonValues {
+  return Object.fromEntries(
+    FUNNEL_METRIC_KEYS.map((key) => [
+      key,
+      calculateChange(currentRow[key], comparisonRow?.[key] ?? null),
+    ]),
+  ) as FunnelComparisonValues;
+}
+
+export function attachFunnelComparison<T extends FunnelSummaryRow | FunnelBreakdownRow>(
+  currentRows: T[],
+  comparisonRows: T[],
+  _currentRange: [string, string],
+  _comparisonRange: [string, string],
+  valueKey: 'primaryDimensionValue' | 'breakdownDimensionValue',
+): Array<T & { comparison: FunnelComparisonValues }> {
+  const sampleValue =
+    (currentRows[0] && getFunnelRowDimensionValue(currentRows[0], valueKey)) ??
+    (comparisonRows[0] && getFunnelRowDimensionValue(comparisonRows[0], valueKey));
+  const isDateDimension =
+    sampleValue !== undefined && isDateDimensionValue(sampleValue);
+
+  const comparisonByKey = new Map(
+    comparisonRows.map((row) => [
+      getComparisonLookupKey(getFunnelRowDimensionValue(row, valueKey), isDateDimension),
+      row,
+    ]),
+  );
+
+  return currentRows.map((currentRow) => ({
+    ...currentRow,
+    comparison: buildFunnelComparisonValues(
+      currentRow,
+      comparisonByKey.get(
+        getComparisonLookupKey(getFunnelRowDimensionValue(currentRow, valueKey), isDateDimension),
+      ),
+    ),
+  }));
 }
 
 const funnelDimensions: Dimension[] = [

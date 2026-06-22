@@ -1,10 +1,24 @@
 import type { ColumnsType } from 'antd/es/table';
-import { formatMetricValue } from './metrics';
+import { formatMetricValue, formatPercent } from './metrics';
 
 export type FunnelColumnFilters = {
   customerScope: 'all' | 'currentNewCustomers' | 'existingCustomers';
   customerType: 'all' | 'valid' | 'invalid';
 };
+
+export type FunnelMetricKey =
+  | 'customerCount'
+  | 'dispatchedCustomerCount'
+  | 'invitedCustomerCount'
+  | 'visitedCustomerCount'
+  | 'convertedCustomerCount'
+  | 'dispatchRate'
+  | 'invitationRate'
+  | 'visitRate'
+  | 'conversionRate'
+  | 'dispatchInvitationRate'
+  | 'inviteVisitRate'
+  | 'visitConversionRate';
 
 const scopeLabel: Record<FunnelColumnFilters['customerScope'], string> = {
   all: '',
@@ -17,10 +31,14 @@ function prefix(filters: FunnelColumnFilters) {
 }
 
 type FunnelMetricDef = {
-  key: string;
+  key: FunnelMetricKey;
   label: string;
   format: 'integer' | 'percent';
   width: number;
+};
+
+type ComparableRecord = {
+  comparison?: Partial<Record<FunnelMetricKey, number | null>> | null;
 };
 
 const funnelMetrics: FunnelMetricDef[] = [
@@ -38,9 +56,43 @@ const funnelMetrics: FunnelMetricDef[] = [
   { key: 'visitConversionRate', label: '到院成交率', format: 'percent', width: 120 },
 ];
 
-export function buildFunnelMetricColumns<T extends Record<string, unknown>>(
-  filters: FunnelColumnFilters,
-): ColumnsType<T> {
+function renderMetricCell(
+  value: number | null,
+  metric: FunnelMetricDef,
+  record: ComparableRecord,
+  hasComparison: boolean,
+) {
+  if (!hasComparison) {
+    return value === null ? '—' : formatMetricValue(value, metric.format);
+  }
+
+  const change = record.comparison?.[metric.key] ?? null;
+
+  return (
+    <div className="metric-cell">
+      <div>{value === null ? '—' : formatMetricValue(value, metric.format)}</div>
+      <div
+        className={
+          change === null
+            ? 'metric-change is-unavailable'
+            : change > 0
+              ? 'metric-change is-up'
+              : change < 0
+                ? 'metric-change is-down'
+                : 'metric-change is-flat'
+        }
+      >
+        {change === null
+          ? '—'
+          : `${change > 0 ? '↑ ' : change < 0 ? '↓ ' : ''}${formatPercent(Math.abs(change))}`}
+      </div>
+    </div>
+  );
+}
+
+export function buildFunnelMetricColumns<
+  T extends Record<string, unknown> & ComparableRecord,
+>(filters: FunnelColumnFilters, hasComparison = false): ColumnsType<T> {
   const p = prefix(filters);
   return funnelMetrics.map((metric) => ({
     title: `${p}${metric.label}`,
@@ -50,7 +102,7 @@ export function buildFunnelMetricColumns<T extends Record<string, unknown>>(
     width: metric.width,
     sorter: (left: T, right: T) =>
       ((left[metric.key] as number) ?? 0) - ((right[metric.key] as number) ?? 0),
-    render: (value: number | null) =>
-      value === null ? '—' : formatMetricValue(value, metric.format),
+    render: (value: number | null, record: T) =>
+      renderMetricCell(value, metric, record, hasComparison),
   }));
 }
