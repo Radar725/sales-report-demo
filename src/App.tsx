@@ -8,8 +8,8 @@ import FunnelFilterBar from './components/FunnelFilterBar';
 import { FunnelTable } from './components/FunnelTable';
 import PerformanceDetailDrawer from './components/PerformanceDetailDrawer';
 import SummaryTable from './components/SummaryTable';
-import { mockDeals } from './data/mockDeals';
-import { mockFunnelCustomers } from './data/mockFunnelCustomers';
+import { demoDealRecords } from './data/mockDeals';
+import { demoFunnelCustomers } from './data/mockFunnelCustomers';
 import {
   attachReportComparison,
   buildReportSummaryRows,
@@ -78,9 +78,9 @@ export default function App() {
   const [funnelPrimaryDimension, setFunnelPrimaryDimension] = useState<FunnelDimensionKey>('consultant');
   const [selectedFunnelBreakdownRow, setSelectedFunnelBreakdownRow] = useState<FunnelSummaryRow | null>(null);
 
-  const filteredRecords = useMemo(() => filterDealRecords(mockDeals, filters), [filters]);
+  const filteredRecords = useMemo(() => filterDealRecords(demoDealRecords, filters), [filters]);
   const baselineRecords = useMemo(
-    () => filterDealRecords(mockDeals, createBaselineFilters(filters)),
+    () => filterDealRecords(demoDealRecords, createBaselineFilters(filters)),
     [filters],
   );
   const hasPerformanceComparison = filters.comparisonDateRange !== null;
@@ -93,13 +93,13 @@ export default function App() {
   );
   const comparisonFilteredRecords = useMemo(
     () =>
-      comparisonFilters ? filterDealRecords(mockDeals, comparisonFilters) : [],
+      comparisonFilters ? filterDealRecords(demoDealRecords, comparisonFilters) : [],
     [comparisonFilters],
   );
   const comparisonBaselineRecords = useMemo(
     () =>
       comparisonFilters
-        ? filterDealRecords(mockDeals, createBaselineFilters(comparisonFilters))
+        ? filterDealRecords(demoDealRecords, createBaselineFilters(comparisonFilters))
         : [],
     [comparisonFilters],
   );
@@ -148,7 +148,7 @@ export default function App() {
 
   // Funnel computed values
   const filteredFunnelCustomers = useMemo(
-    () => filterFunnelCustomers(mockFunnelCustomers, funnelFilters),
+    () => filterFunnelCustomers(demoFunnelCustomers, funnelFilters),
     [funnelFilters],
   );
   const hasFunnelComparison = funnelFilters.comparisonDateRange !== null;
@@ -162,7 +162,7 @@ export default function App() {
   const comparisonFunnelCustomers = useMemo(
     () =>
       comparisonFunnelFilters
-        ? filterFunnelCustomers(mockFunnelCustomers, comparisonFunnelFilters)
+        ? filterFunnelCustomers(demoFunnelCustomers, comparisonFunnelFilters)
         : [],
     [comparisonFunnelFilters],
   );
@@ -213,7 +213,7 @@ export default function App() {
                 <Card className="toolbar-card">
                   <FilterBar
                     filters={filters}
-                    records={mockDeals}
+                    records={demoDealRecords}
                     onFiltersChange={(nextFilters) => {
                       setFilters(nextFilters);
                       setSelectedBreakdownRow(null);
@@ -285,7 +285,7 @@ export default function App() {
                 <Card className="toolbar-card">
                   <FunnelFilterBar
                     filters={funnelFilters}
-                    records={mockFunnelCustomers}
+                    records={demoFunnelCustomers}
                     onFiltersChange={(nextFilters) => {
                       setFunnelFilters(nextFilters);
                       setSelectedFunnelBreakdownRow(null);
