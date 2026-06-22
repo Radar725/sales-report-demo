@@ -345,5 +345,72 @@ describe('App', () => {
     expect(funnelDrawer.querySelector('.metric-change')).toBeTruthy();
   });
 
+  it('shows repurchase total contribution columns and omits comparison deltas for them', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await setDateRange(user);
+    await selectOption(user, '客户统计范围', '新客');
+    await selectOption(user, '成交类型', '复购');
+    await applyFilters(user);
+
+    for (const column of [
+      '新客复购客户占总复购比',
+      '新客复购单量占总复购比',
+      '新客复购业绩占总复购比',
+    ]) {
+      expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
+    }
+
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
+    const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    for (const column of [
+      '新客复购客户占总复购比',
+      '新客复购单量占总复购比',
+      '新客复购业绩占总复购比',
+    ]) {
+      expect(within(drawer).getByRole('columnheader', { name: column })).toBeInTheDocument();
+    }
+
+    const reportTable = document.querySelector('.report-table')!;
+    const totalRateHeader = within(reportTable as HTMLElement).getByRole('columnheader', {
+      name: '新客复购客户占总复购比',
+    });
+    const totalRateCell = totalRateHeader.closest('table')!.querySelector(
+      'tbody tr td:nth-child(' +
+        (Array.from(totalRateHeader.closest('table')!.querySelectorAll('th') as NodeListOf<HTMLElement>).indexOf(
+          totalRateHeader,
+        ) +
+          1) +
+        ')',
+    );
+    expect(totalRateCell?.querySelector('.metric-change')).toBeNull();
+
+    const reportedAmountHeader = within(reportTable as HTMLElement).getByRole('columnheader', {
+      name: '新客复购上报业绩',
+    });
+    const reportedAmountCell = reportedAmountHeader.closest('table')!.querySelector(
+      'tbody tr td:nth-child(' +
+        (Array.from(reportedAmountHeader.closest('table')!.querySelectorAll('th') as NodeListOf<HTMLElement>).indexOf(
+          reportedAmountHeader,
+        ) +
+          1) +
+        ')',
+    );
+    expect(reportedAmountCell?.querySelector('.metric-change')).toBeTruthy();
+  });
+
+  it('hides repurchase total contribution columns for non-repurchase deal types', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await setDateRange(user);
+    await selectOption(user, '客户统计范围', '新客');
+    await selectOption(user, '成交类型', '新诊');
+    await applyFilters(user);
+
+    expect(screen.queryByRole('columnheader', { name: '新客复购客户占总复购比' })).toBeNull();
+  });
+
 });
 
