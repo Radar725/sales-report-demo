@@ -13,6 +13,7 @@ export type DealRecord = Record<RecordDimensionKey, string> & {
   reportedAt: string;
   dealType: DealType;
   customerCreatedInPeriod: boolean;
+  customerCreatedAt: string;
   createdCustomerCountInPeriod: number;
   historicalRepurchaseCustomerCount: number;
   historicalRepurchaseAmount: number;
@@ -39,6 +40,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-02 10:18',
     dealType: '新诊',
     customerCreatedInPeriod: true,
+    customerCreatedAt: '2026-06-02',
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
@@ -65,6 +67,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-06 14:32',
     dealType: '新诊',
     customerCreatedInPeriod: true,
+    customerCreatedAt: '2026-06-02',
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
@@ -91,6 +94,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-11 09:46',
     dealType: '新诊',
     customerCreatedInPeriod: true,
+    customerCreatedAt: '2026-06-02',
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
@@ -117,6 +121,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-17 16:20',
     dealType: '复购',
     customerCreatedInPeriod: false,
+    customerCreatedAt: '2026-05-15',
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
@@ -143,6 +148,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-20 11:05',
     dealType: '复购',
     customerCreatedInPeriod: false,
+    customerCreatedAt: '2026-05-15',
     createdCustomerCountInPeriod: 4,
     historicalRepurchaseCustomerCount: 10,
     historicalRepurchaseAmount: 4000000,
@@ -169,6 +175,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-05 13:27',
     dealType: '新诊',
     customerCreatedInPeriod: true,
+    customerCreatedAt: '2026-06-05',
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
@@ -195,6 +202,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-09 15:12',
     dealType: '新诊',
     customerCreatedInPeriod: true,
+    customerCreatedAt: '2026-06-05',
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
@@ -221,6 +229,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-13 10:54',
     dealType: '复购',
     customerCreatedInPeriod: false,
+    customerCreatedAt: '2026-05-15',
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
@@ -247,6 +256,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-22 17:38',
     dealType: '复购',
     customerCreatedInPeriod: false,
+    customerCreatedAt: '2026-05-15',
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
@@ -273,6 +283,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-20 09:30',
     dealType: '新诊',
     customerCreatedInPeriod: true,
+    customerCreatedAt: '2026-06-20',
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
@@ -299,6 +310,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-20 10:15',
     dealType: '复购',
     customerCreatedInPeriod: true,
+    customerCreatedAt: '2026-06-20',
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,
@@ -325,6 +337,7 @@ export const mockDeals: DealRecord[] = [
     reportedAt: '2026-06-20 11:40',
     dealType: '新诊',
     customerCreatedInPeriod: false,
+    customerCreatedAt: '2026-05-15',
     createdCustomerCountInPeriod: 5,
     historicalRepurchaseCustomerCount: 8,
     historicalRepurchaseAmount: 3000000,

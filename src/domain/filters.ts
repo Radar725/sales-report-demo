@@ -4,11 +4,21 @@ import type { DealRecord, DealType } from '../data/mockDeals';
 export type DealTypeFilter = 'all' | 'newDiagnosis' | 'repurchase';
 export type CustomerScopeFilter = 'all' | 'currentNewCustomers' | 'existingCustomers';
 
-function matchesCustomerScope(record: DealRecord, customerScope: CustomerScopeFilter) {
+function matchesCustomerScope(
+  record: DealRecord,
+  customerScope: CustomerScopeFilter,
+  dateRange: [string, string] | null,
+) {
   if (customerScope === 'all') return true;
-  return customerScope === 'currentNewCustomers'
-    ? record.customerCreatedInPeriod
-    : !record.customerCreatedInPeriod;
+  if (dateRange === null) return true;
+
+  const [start, end] = dateRange;
+
+  if (customerScope === 'currentNewCustomers') {
+    return record.customerCreatedAt >= start && record.customerCreatedAt <= end;
+  }
+
+  return record.customerCreatedAt < start;
 }
 
 export type SalesDashboardFilters = {
@@ -119,7 +129,7 @@ export function filterDealRecords(records: DealRecord[], filters: SalesDashboard
       isInSelection(record.channel, filters.channels) &&
       isInSelection(record.projectCategory, filters.projectCategories) &&
       isInSelection(record.project, filters.projects) &&
-      matchesCustomerScope(record, filters.customerScope) &&
+      matchesCustomerScope(record, filters.customerScope, filters.dateRange) &&
       isInSelection(record.customerPool, filters.customerPools) &&
       isInSelection(record.city, filters.cities) &&
       isInSelection(record.institution, filters.institutions)

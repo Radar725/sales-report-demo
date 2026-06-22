@@ -31,6 +31,7 @@ describe('sales dashboard filters', () => {
   it('filters by customer statistical scope', () => {
     const rows = filterDealRecords(mockDeals, {
       ...defaultFilters,
+      dateRange: ['2026-06-01', '2026-06-30'],
       customerScope: 'currentNewCustomers',
     });
 
@@ -41,6 +42,7 @@ describe('sales dashboard filters', () => {
   it('filters to old customers', () => {
     const rows = filterDealRecords(mockDeals, {
       ...defaultFilters,
+      dateRange: ['2026-06-01', '2026-06-30'],
       customerScope: 'existingCustomers',
     });
 
@@ -173,5 +175,27 @@ describe('sales dashboard filters', () => {
       expect(projectTree).toHaveLength(0);
       expect(cityTree).toHaveLength(0);
     });
+  });
+
+  it('classifies customer scope from customerCreatedAt against date range', () => {
+    const records = [
+      { ...mockDeals[0], dealDate: '2026-06-20', customerCreatedAt: '2026-06-10' },
+      { ...mockDeals[1], dealDate: '2026-05-20', customerCreatedAt: '2026-04-01' },
+    ];
+
+    expect(
+      filterDealRecords(records, {
+        ...defaultFilters,
+        dateRange: ['2026-06-01', '2026-06-30'],
+        customerScope: 'currentNewCustomers',
+      }),
+    ).toHaveLength(1);
+    expect(
+      filterDealRecords(records, {
+        ...defaultFilters,
+        dateRange: ['2026-05-01', '2026-05-31'],
+        customerScope: 'existingCustomers',
+      }),
+    ).toHaveLength(1);
   });
 });
