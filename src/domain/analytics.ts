@@ -1,6 +1,8 @@
 import type { DealRecord } from '../data/mockDeals';
 import type { DimensionKey } from './dimensions';
+import { calculateChange, getDateComparisonKey } from './comparison';
 import type { MetricValue } from './metrics';
+import type { ReportMetricKey } from './reportMetrics';
 
 export type SummaryRow = MetricValue & {
   key: string;
@@ -20,6 +22,46 @@ export type ReportContributionValues = {
 
 export type ReportSummaryRow = SummaryRow & ReportContributionValues;
 export type ReportBreakdownRow = BreakdownRow & ReportContributionValues;
+
+export type ReportComparisonValues = Partial<Record<ReportMetricKey, number | null>>;
+
+export type ReportComparableSummaryRow = ReportSummaryRow & {
+  comparison: ReportComparisonValues | null;
+};
+
+export type ReportComparableBreakdownRow = ReportBreakdownRow & {
+  comparison: ReportComparisonValues | null;
+};
+
+const REPORT_METRIC_KEYS: ReportMetricKey[] = [
+  'reportedAmount',
+  'dealCount',
+  'customerCount',
+  'averageDealAmount',
+  'reportedAmountRate',
+  'dealCountRate',
+  'customerCountRate',
+];
+
+function isDateDimensionValue(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function getComparisonLookupKey(value: string, isDateDimension: boolean) {
+  return isDateDimension ? getDateComparisonKey(value) : value;
+}
+
+function buildComparisonValues<T extends ReportSummaryRow | ReportBreakdownRow>(
+  currentRow: T,
+  comparisonRow: T | undefined,
+): ReportComparisonValues {
+  return Object.fromEntries(
+    REPORT_METRIC_KEYS.map((key) => [
+      key,
+      calculateChange(currentRow[key], comparisonRow?.[key] ?? null),
+    ]),
+  ) as ReportComparisonValues;
+}
 
 type BreakdownQuery = {
   primaryDimension: DimensionKey;
@@ -259,6 +301,46 @@ export function buildReportBreakdownRows(
       ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
     };
   });
+}
+
+function getRowDimensionValue(
+  row: ReportSummaryRow | ReportBreakdownRow,
+  valueKey: 'primaryDimensionValue' | 'breakdownDimensionValue',
+) {
+  return valueKey === 'primaryDimensionValue'
+    ? (row as ReportSummaryRow).primaryDimensionValue
+    : (row as ReportBreakdownRow).breakdownDimensionValue;
+}
+
+export function attachReportComparison<T extends ReportSummaryRow | ReportBreakdownRow>(
+  currentRows: T[],
+  comparisonRows: T[],
+  _currentRange: [string, string],
+  _comparisonRange: [string, string],
+  valueKey: 'primaryDimensionValue' | 'breakdownDimensionValue',
+): Array<T & { comparison: ReportComparisonValues }> {
+  const sampleValue =
+    (currentRows[0] && getRowDimensionValue(currentRows[0], valueKey)) ??
+    (comparisonRows[0] && getRowDimensionValue(comparisonRows[0], valueKey));
+  const isDateDimension =
+    sampleValue !== undefined && isDateDimensionValue(sampleValue);
+
+  const comparisonByKey = new Map(
+    comparisonRows.map((row) => [
+      getComparisonLookupKey(getRowDimensionValue(row, valueKey), isDateDimension),
+      row,
+    ]),
+  );
+
+  return currentRows.map((currentRow) => ({
+    ...currentRow,
+    comparison: buildComparisonValues(
+      currentRow,
+      comparisonByKey.get(
+        getComparisonLookupKey(getRowDimensionValue(currentRow, valueKey), isDateDimension),
+      ),
+    ),
+  }));
 }
 
 type BreakdownDetailQuery = {

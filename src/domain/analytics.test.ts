@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  attachReportComparison,
   buildBreakdownRows,
   buildReportBreakdownRows,
   buildReportSummaryRows,
   buildSummaryRows,
   getDetailRecords,
+  type ReportSummaryRow,
 } from './analytics';
 import { mockDeals } from '../data/mockDeals';
 
@@ -206,6 +208,73 @@ describe('sales analytics aggregation', () => {
         customerCountRate: 3 / 4,
       }),
     ]);
+  });
+
+  it('attaches period-over-period comparison changes to summary rows', () => {
+    const baseMetrics = {
+      confirmedAmount: 0,
+      newDiagnosisAmount: 0,
+      newDiagnosisDealCount: 0,
+      newDiagnosisCustomerCount: 0,
+      newDiagnosisDealCountRate: 0,
+      newDiagnosisCustomerRate: 0,
+      newDiagnosisAmountRate: 0,
+      repurchaseAmount: 0,
+      repurchaseDealCount: 0,
+      repurchaseCustomerCount: 0,
+      repurchaseDealCountRate: 0,
+      repurchaseCustomerRate: 0,
+      repurchaseAmountRate: 0,
+      newCustomerCount: 0,
+      convertedNewCustomerCount: 0,
+      newCustomerConversionRate: 0,
+      newCustomerAmountContributionRate: 0,
+      historicalRepurchaseCustomerContributionRate: 0,
+      historicalRepurchaseAmountContributionRate: 0,
+    };
+
+    const currentRows: ReportSummaryRow[] = [
+      {
+        key: 'consultant:张敏',
+        primaryDimensionValue: '张敏',
+        reportedAmount: 15000,
+        dealCount: 2,
+        customerCount: 2,
+        averageDealAmount: 7500,
+        reportedAmountRate: 1,
+        dealCountRate: 1,
+        customerCountRate: 1,
+        ...baseMetrics,
+      },
+    ];
+
+    const comparisonRows: ReportSummaryRow[] = [
+      {
+        key: 'consultant:张敏',
+        primaryDimensionValue: '张敏',
+        reportedAmount: 12000,
+        dealCount: 2,
+        customerCount: 0,
+        averageDealAmount: 6000,
+        reportedAmountRate: 1,
+        dealCountRate: 1,
+        customerCountRate: null,
+        ...baseMetrics,
+      },
+    ];
+
+    const rows = attachReportComparison(
+      currentRows,
+      comparisonRows,
+      ['2026-06-01', '2026-06-30'],
+      ['2026-05-01', '2026-05-31'],
+      'primaryDimensionValue',
+    );
+
+    expect(rows.find((row) => row.primaryDimensionValue === '张敏')?.comparison).toMatchObject({
+      reportedAmount: 0.25,
+      customerCount: null,
+    });
   });
 
   it('calculates breakdown ratios against the same primary and breakdown dimensions', () => {

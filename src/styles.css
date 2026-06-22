@@ -43,3 +43,27 @@ body {
   white-space: normal;
   word-break: break-all;
 }
+
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.metric-change {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.metric-change.is-up {
+  color: #16a34a;
+}
+
+.metric-change.is-down {
+  color: #dc2626;
+}
+
+.metric-change.is-flat,
+.metric-change.is-unavailable {
+  color: #6b7280;
+}

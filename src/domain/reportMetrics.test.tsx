@@ -1,3 +1,4 @@
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { buildReportMetricColumns, REPORT_METRIC_WIDTHS } from './reportMetrics';
 
@@ -32,6 +33,30 @@ describe('report metric columns', () => {
       '上报业绩', '成交单量', '成交客户数', '客单价',
       '业绩占比', '成交单量占比', '成交客户占比',
     ]);
+  });
+
+  it('renders comparison deltas when hasComparison is true', () => {
+    const columns = buildReportMetricColumns(allFilters, true);
+    const record = {
+      reportedAmount: 12000,
+      dealCount: 2,
+      customerCount: 2,
+      averageDealAmount: 6000,
+      reportedAmountRate: 1,
+      dealCountRate: 1,
+      customerCountRate: 1,
+      comparison: {
+        reportedAmount: 0.25,
+        customerCount: null,
+      },
+    };
+
+    render(<>{columns[0].render?.(12000, record, 0)}</>);
+    expect(screen.getByText('¥12,000')).toBeInTheDocument();
+    expect(screen.getByText('↑ 25.0%')).toBeInTheDocument();
+
+    render(<>{columns[2].render?.(2, record, 0)}</>);
+    expect(screen.getAllByText('—')).toHaveLength(1);
   });
 
   it('prefixes every metric with customer scope then deal type', () => {

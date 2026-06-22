@@ -1,5 +1,5 @@
 import type { ColumnsType } from 'antd/es/table';
-import { formatMetricValue, type MetricValue } from './metrics';
+import { formatMetricValue, formatPercent, type MetricValue } from './metrics';
 import type { CustomerScopeFilter, DealTypeFilter } from './filters';
 
 export type ReportColumnFilters = {
@@ -16,13 +16,14 @@ export type ReportMetricValue = Pick<
   customerCountRate: number | null;
 };
 
+export type ReportMetricKey = keyof ReportMetricValue;
+
 export const REPORT_METRIC_WIDTHS = {
   amount: 132,
   count: 104,
   rate: 116,
 } as const;
 
-type ReportMetricKey = keyof ReportMetricValue;
 type ReportMetricFormat = 'amount' | 'integer' | 'percent';
 
 type ReportMetricDefinition = {
@@ -30,6 +31,10 @@ type ReportMetricDefinition = {
   label: string;
   format: ReportMetricFormat;
   width: number;
+};
+
+type ComparableRecord = {
+  comparison?: Partial<Record<ReportMetricKey, number | null>> | null;
 };
 
 const customerScopeLabels: Record<CustomerScopeFilter, string> = {
@@ -48,6 +53,40 @@ function getMetricLabel(label: string, filters: ReportColumnFilters) {
   return `${customerScopeLabels[filters.customerScope]}${dealTypeLabels[filters.dealType]}${label}`;
 }
 
+function renderMetricCell(
+  value: number | null,
+  metric: ReportMetricDefinition,
+  record: ComparableRecord,
+  hasComparison: boolean,
+) {
+  if (!hasComparison) {
+    return value === null ? '—' : formatMetricValue(value, metric.format);
+  }
+
+  const change = record.comparison?.[metric.key] ?? null;
+
+  return (
+    <div className="metric-cell">
+      <div>{value === null ? '—' : formatMetricValue(value, metric.format)}</div>
+      <div
+        className={
+          change === null
+            ? 'metric-change is-unavailable'
+            : change > 0
+              ? 'metric-change is-up'
+              : change < 0
+                ? 'metric-change is-down'
+                : 'metric-change is-flat'
+        }
+      >
+        {change === null
+          ? '—'
+          : `${change > 0 ? '↑ ' : change < 0 ? '↓ ' : ''}${formatPercent(Math.abs(change))}`}
+      </div>
+    </div>
+  );
+}
+
 const baseMetrics: ReportMetricDefinition[] = [
   { key: 'reportedAmount', label: '上报业绩', format: 'amount', width: REPORT_METRIC_WIDTHS.amount },
   { key: 'dealCount', label: '成交单量', format: 'integer', width: REPORT_METRIC_WIDTHS.count },
@@ -61,8 +100,9 @@ const contributionMetrics: ReportMetricDefinition[] = [
   { key: 'customerCountRate', label: '成交客户占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
 ];
 
-export function buildReportMetricColumns<T extends ReportMetricValue>(
+export function buildReportMetricColumns<T extends ReportMetricValue & ComparableRecord>(
   filters: ReportColumnFilters,
+  hasComparison = false,
 ): ColumnsType<T> {
   return [...baseMetrics, ...contributionMetrics].map((metric) => ({
     title: getMetricLabel(metric.label, filters),
@@ -71,7 +111,7 @@ export function buildReportMetricColumns<T extends ReportMetricValue>(
     align: 'right',
     width: metric.width,
     sorter: (left: T, right: T) => (left[metric.key] ?? 0) - (right[metric.key] ?? 0),
-    render: (value: number | null) =>
-      value === null ? '—' : formatMetricValue(value, metric.format),
+    render: (value: number | null, record: T) =>
+      renderMetricCell(value, metric, record, hasComparison),
   }));
 }
