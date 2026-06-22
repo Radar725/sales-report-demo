@@ -115,27 +115,39 @@ export function buildTreeData(records: DealRecord[]): FilterTreeData {
   };
 }
 
+function matchesNonDateFilters(record: DealRecord, filters: SalesDashboardFilters) {
+  return (
+    isInSelection(record.department, filters.departments) &&
+    isInSelection(record.consultant, filters.consultants) &&
+    matchesDealType(record, filters.dealType) &&
+    isInSelection(record.channelCategory, filters.channelCategories) &&
+    isInSelection(record.channel, filters.channels) &&
+    isInSelection(record.projectCategory, filters.projectCategories) &&
+    isInSelection(record.project, filters.projects) &&
+    matchesCustomerScope(record, filters.customerScope, filters.dateRange) &&
+    isInSelection(record.customerPool, filters.customerPools) &&
+    isInSelection(record.city, filters.cities) &&
+    isInSelection(record.institution, filters.institutions)
+  );
+}
+
 export function filterDealRecords(records: DealRecord[], filters: SalesDashboardFilters) {
   return records.filter((record) => {
     const matchesDateRange =
       filters.dateRange === null ||
       (record.dealDate >= filters.dateRange[0] && record.dealDate <= filters.dateRange[1]);
 
-    return (
-      matchesDateRange &&
-      isInSelection(record.department, filters.departments) &&
-      isInSelection(record.consultant, filters.consultants) &&
-      matchesDealType(record, filters.dealType) &&
-      isInSelection(record.channelCategory, filters.channelCategories) &&
-      isInSelection(record.channel, filters.channels) &&
-      isInSelection(record.projectCategory, filters.projectCategories) &&
-      isInSelection(record.project, filters.projects) &&
-      matchesCustomerScope(record, filters.customerScope, filters.dateRange) &&
-      isInSelection(record.customerPool, filters.customerPools) &&
-      isInSelection(record.city, filters.cities) &&
-      isInSelection(record.institution, filters.institutions)
-    );
+    return matchesDateRange && matchesNonDateFilters(record, filters);
   });
+}
+
+export function filterHistoricalRepurchaseRecords(
+  records: DealRecord[],
+  filters: SalesDashboardFilters,
+) {
+  return records.filter((record) =>
+    matchesNonDateFilters(record, { ...filters, dealType: 'repurchase' }),
+  );
 }
 
 export function getFilterOptions(

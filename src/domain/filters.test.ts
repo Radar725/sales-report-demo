@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { mockDeals } from '../data/mockDeals';
-import { buildTreeData, createBaselineFilters, filterDealRecords, getFilterOptions, type SalesDashboardFilters } from './filters';
+import { demoDealRecords, mockDeals } from '../data/mockDeals';
+import {
+  buildTreeData,
+  createBaselineFilters,
+  filterDealRecords,
+  filterHistoricalRepurchaseRecords,
+  getFilterOptions,
+  type SalesDashboardFilters,
+} from './filters';
 
 const defaultFilters: SalesDashboardFilters = {
   dateRange: null,
@@ -19,6 +26,23 @@ const defaultFilters: SalesDashboardFilters = {
 };
 
 describe('sales dashboard filters', () => {
+  it('builds historical repurchase records without the deal-date limit', () => {
+    const filters = {
+      ...defaultFilters,
+      dateRange: ['2026-06-01', '2026-06-30'] as [string, string],
+      customerScope: 'existingCustomers' as const,
+      consultants: ['张敏'],
+    };
+
+    const rows = filterHistoricalRepurchaseRecords(demoDealRecords, filters);
+
+    expect(rows).not.toEqual([]);
+    expect(rows.every((row) => row.dealType === '复购')).toBe(true);
+    expect(rows.every((row) => row.customerCreatedAt < '2026-06-01')).toBe(true);
+    expect(rows.every((row) => row.consultant === '张敏')).toBe(true);
+    expect(rows.some((row) => row.dealDate < '2026-06-01')).toBe(true);
+  });
+
   it('filters by deal type', () => {
     const rows = filterDealRecords(mockDeals, {
       ...defaultFilters,
