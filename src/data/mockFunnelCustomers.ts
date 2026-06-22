@@ -91,6 +91,16 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     channelCategory: '私域运营',
     channel: '私域',
   },
+  {
+    id: 'C015',
+    customerCreatedAt: '2026-06-12',
+    customerType: 'invalid',
+    status: 'repurchased',
+    department: '无效客户演示',
+    consultant: '无效客户演示',
+    channelCategory: '无效客户演示',
+    channel: '无效客户渠道',
+  },
 ];
 
 /** 对比期（2026-05）漏斗客户 cohort。 */

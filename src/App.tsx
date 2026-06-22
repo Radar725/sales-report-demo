@@ -49,7 +49,6 @@ const defaultFilters: SalesDashboardFilters = {
 const defaultFunnelFilters: FunnelFilters = {
   dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), today],
   comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
-  customerType: 'valid',
   departments: [],
   consultants: [],
   channelCategories: [],

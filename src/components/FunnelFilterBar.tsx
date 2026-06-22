@@ -1,4 +1,4 @@
-import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
+import { Button, DatePicker, Form, Space, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import type { FunnelCustomerRecord } from '../data/mockFunnelCustomers';
@@ -15,14 +15,6 @@ type FunnelFilterBarProps = {
   onFiltersChange: (filters: FunnelFilters) => void;
 };
 
-const customerTypeOptions: Array<{
-  value: FunnelFilters['customerType'];
-  label: string;
-}> = [
-  { value: 'all', label: '全部' },
-  { value: 'valid', label: '有效' },
-  { value: 'invalid', label: '无效' },
-];
 
 const presets: NonNullable<
   React.ComponentProps<typeof DatePicker.RangePicker>['presets']
@@ -53,7 +45,6 @@ const presets: NonNullable<
 const defaultFunnelFiltersReset: FunnelFilters = {
   dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
   comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
-  customerType: 'valid',
   departments: [],
   consultants: [],
   channelCategories: [],
@@ -134,19 +125,6 @@ export default function FunnelFilterBar({
                   : null,
             }));
           }}
-        />
-      </Form.Item>
-
-      <Form.Item label="客户类型">
-        <Select
-          value={localFilters.customerType}
-          style={{ width: 140 }}
-          placeholder="请选择客户类型"
-          allowClear={false}
-          options={customerTypeOptions}
-          onChange={(customerType) =>
-            setLocalFilters((prev) => ({ ...prev, customerType }))
-          }
         />
       </Form.Item>
 

@@ -235,13 +235,14 @@ describe('App', () => {
     await openFunnelReport(user);
     expect(screen.getByText('录单时间')).toBeInTheDocument();
     expect(screen.queryByText('客户统计范围')).not.toBeInTheDocument();
+    expect(screen.queryByText('客户类型')).not.toBeInTheDocument();
   });
 
   it('shows fixed status cohort columns in the funnel table', async () => {
     const user = userEvent.setup();
     render(<App />);
     await openFunnelReport(user);
-    for (const name of ['录单客户数', '已加微客户数', '已复购客户数', '复购率']) {
+    for (const name of ['录单客户数', '有效客户数', '已加微客户数', '已复购客户数', '有效客户率', '复购率']) {
       expect(screen.getByRole('columnheader', { name })).toBeInTheDocument();
     }
   });
@@ -261,20 +262,6 @@ describe('App', () => {
     render(<App />);
 
     await openFunnelReport(user);
-
-    const typeItems = screen.getAllByText('客户类型');
-    const funnelTypeFormItem = typeItems[typeItems.length - 1].closest('.ant-form-item')!;
-    fireEvent.mouseDown(funnelTypeFormItem.querySelector('.ant-select-selector')!);
-    await waitFor(() => {
-      expect(document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toBeTruthy();
-    });
-    const dropdownContainer = document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')!;
-    const allOption = within(dropdownContainer as HTMLElement).getByText('全部');
-    fireEvent.click(allOption);
-
-    const queryBtns = screen.getAllByRole('button', { name: '查 询' });
-    await user.click(queryBtns[queryBtns.length - 1]);
-
     await user.click(screen.getByRole('tab', { name: '业绩报表' }));
 
     const perfScopeItems = screen.getAllByText('客户统计范围');
