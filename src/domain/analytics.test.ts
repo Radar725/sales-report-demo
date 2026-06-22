@@ -8,7 +8,12 @@ import {
   getDetailRecords,
   type ReportSummaryRow,
 } from './analytics';
-import { mockDeals } from '../data/mockDeals';
+import { demoDealRecords, mockDeals } from '../data/mockDeals';
+import {
+  filterDealRecords,
+  filterHistoricalRepurchaseRecords,
+  type SalesDashboardFilters,
+} from './filters';
 
 describe('sales analytics aggregation', () => {
   it('builds summary rows with the expanded metric set', () => {
@@ -165,7 +170,7 @@ describe('sales analytics aggregation', () => {
   });
 
   it('builds one total row and returns every record in its detail scope', () => {
-    const rows = buildReportSummaryRows(mockDeals, mockDeals, 'total');
+    const rows = buildReportSummaryRows(mockDeals, mockDeals, [], 'total');
     const records = getDetailRecords(mockDeals, {
       primaryDimension: 'total',
       primaryDimensionValue: '汇总',
@@ -182,7 +187,7 @@ describe('sales analytics aggregation', () => {
   });
 
   it('returns 100 percent contribution rates when current and baseline records match', () => {
-    const [row] = buildReportSummaryRows(mockDeals, mockDeals, 'total');
+    const [row] = buildReportSummaryRows(mockDeals, mockDeals, [], 'total');
 
     expect(row).toMatchObject({
       reportedAmountRate: 1,
@@ -195,7 +200,7 @@ describe('sales analytics aggregation', () => {
     const currentRecords = mockDeals.filter(
       (record) => record.consultant === '张敏' && record.dealType === '新诊',
     );
-    const rows = buildReportSummaryRows(currentRecords, mockDeals, 'consultant');
+    const rows = buildReportSummaryRows(currentRecords, mockDeals, [], 'consultant');
 
     expect(rows).toEqual([
       expect.objectContaining({
@@ -244,6 +249,9 @@ describe('sales analytics aggregation', () => {
         reportedAmountRate: 1,
         dealCountRate: 1,
         customerCountRate: 1,
+        repurchaseCustomerTotalRate: null,
+        repurchaseDealCountTotalRate: null,
+        repurchaseAmountTotalRate: null,
         ...baseMetrics,
       },
     ];
@@ -259,6 +267,9 @@ describe('sales analytics aggregation', () => {
         reportedAmountRate: 1,
         dealCountRate: 1,
         customerCountRate: null,
+        repurchaseCustomerTotalRate: null,
+        repurchaseDealCountTotalRate: null,
+        repurchaseAmountTotalRate: null,
         ...baseMetrics,
       },
     ];
@@ -277,11 +288,107 @@ describe('sales analytics aggregation', () => {
     });
   });
 
+  it('calculates repurchase total rates from same-dimension history', () => {
+    const filters: SalesDashboardFilters = {
+      dateRange: ['2026-06-01', '2026-06-30'],
+      comparisonDateRange: null,
+      departments: [],
+      consultants: ['张敏'],
+      dealType: 'repurchase',
+      channelCategories: [],
+      channels: [],
+      projectCategories: [],
+      projects: [],
+      customerScope: 'existingCustomers',
+      customerPools: [],
+      cities: [],
+      institutions: [],
+    };
+    const current = filterDealRecords(demoDealRecords, filters);
+    const history = filterHistoricalRepurchaseRecords(demoDealRecords, filters);
+    const [row] = buildReportSummaryRows(current, current, history, 'consultant');
+
+    expect(row).toMatchObject({
+      repurchaseCustomerTotalRate:
+        new Set(current.map((r) => r.customerId)).size /
+        new Set(history.map((r) => r.customerId)).size,
+      repurchaseDealCountTotalRate: current.length / history.length,
+      repurchaseAmountTotalRate:
+        current.reduce((sum, r) => sum + r.reportedAmount, 0) /
+        history.reduce((sum, r) => sum + r.reportedAmount, 0),
+    });
+  });
+
+  it('calculates repurchase total rates in breakdown rows from same-dimension history', () => {
+    const filters: SalesDashboardFilters = {
+      dateRange: ['2026-06-01', '2026-06-30'],
+      comparisonDateRange: null,
+      departments: [],
+      consultants: ['张敏'],
+      dealType: 'repurchase',
+      channelCategories: [],
+      channels: [],
+      projectCategories: [],
+      projects: [],
+      customerScope: 'existingCustomers',
+      customerPools: [],
+      cities: [],
+      institutions: [],
+    };
+    const current = filterDealRecords(demoDealRecords, filters);
+    const history = filterHistoricalRepurchaseRecords(demoDealRecords, filters);
+    const rows = buildReportBreakdownRows(current, current, history, {
+      primaryDimension: 'consultant',
+      primaryDimensionValue: '张敏',
+      breakdownDimension: 'channel',
+    });
+
+    const channel = rows[0].breakdownDimensionValue;
+    const currentChannel = current.filter((record) => record.channel === channel);
+    const historyChannel = history.filter((record) => record.channel === channel);
+
+    expect(rows[0]).toMatchObject({
+      repurchaseCustomerTotalRate:
+        new Set(currentChannel.map((r) => r.customerId)).size /
+        new Set(historyChannel.map((r) => r.customerId)).size,
+      repurchaseDealCountTotalRate: currentChannel.length / historyChannel.length,
+      repurchaseAmountTotalRate:
+        currentChannel.reduce((sum, r) => sum + r.reportedAmount, 0) /
+        historyChannel.reduce((sum, r) => sum + r.reportedAmount, 0),
+    });
+  });
+
+  it('returns null repurchase total rates when historical records are empty', () => {
+    const filters: SalesDashboardFilters = {
+      dateRange: ['2026-06-01', '2026-06-30'],
+      comparisonDateRange: null,
+      departments: [],
+      consultants: ['张敏'],
+      dealType: 'repurchase',
+      channelCategories: [],
+      channels: [],
+      projectCategories: [],
+      projects: [],
+      customerScope: 'existingCustomers',
+      customerPools: [],
+      cities: [],
+      institutions: [],
+    };
+    const current = filterDealRecords(demoDealRecords, filters);
+    const [row] = buildReportSummaryRows(current, current, [], 'consultant');
+
+    expect(row).toMatchObject({
+      repurchaseCustomerTotalRate: null,
+      repurchaseDealCountTotalRate: null,
+      repurchaseAmountTotalRate: null,
+    });
+  });
+
   it('calculates breakdown ratios against the same primary and breakdown dimensions', () => {
     const currentRecords = mockDeals.filter(
       (record) => record.consultant === '张敏' && record.dealType === '新诊',
     );
-    const rows = buildReportBreakdownRows(currentRecords, mockDeals, {
+    const rows = buildReportBreakdownRows(currentRecords, mockDeals, [], {
       primaryDimension: 'consultant',
       primaryDimensionValue: '张敏',
       breakdownDimension: 'channel',
