@@ -1,17 +1,23 @@
 export type FunnelCustomerType = 'valid' | 'invalid';
 
+export type FunnelCustomerStatus =
+  | 'pendingWechat'
+  | 'wechatAdded'
+  | 'dispatched'
+  | 'invited'
+  | 'visited'
+  | 'firstConverted'
+  | 'repurchased';
+
 export type FunnelCustomerRecord = {
   id: string;
   customerCreatedAt: string;
   customerType: FunnelCustomerType;
+  status: FunnelCustomerStatus;
   department: string;
   consultant: string;
   channelCategory: string;
   channel: string;
-  dispatchedAt: string | null;
-  invitedAt: string | null;
-  visitedAt: string | null;
-  convertedAt: string | null;
 };
 
 export const mockFunnelCustomers: FunnelCustomerRecord[] = [
@@ -19,187 +25,145 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     id: 'C001',
     customerCreatedAt: '2026-06-05',
     customerType: 'valid',
+    status: 'repurchased',
     department: '华东一部',
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
-    dispatchedAt: '2026-06-06',
-    invitedAt: '2026-06-08',
-    visitedAt: '2026-06-12',
-    convertedAt: '2026-06-15',
   },
   {
     id: 'C002',
     customerCreatedAt: '2026-06-10',
     customerType: 'valid',
+    status: 'invited',
     department: '华东一部',
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
-    dispatchedAt: '2026-06-15',
-    invitedAt: '2026-07-02',
-    visitedAt: null,
-    convertedAt: null,
   },
   {
     id: 'C003',
     customerCreatedAt: '2026-06-08',
     customerType: 'invalid',
+    status: 'firstConverted',
     department: '华东一部',
     consultant: '张敏',
     channelCategory: '私域运营',
     channel: '私域',
-    dispatchedAt: '2026-06-10',
-    invitedAt: '2026-06-15',
-    visitedAt: '2026-06-20',
-    convertedAt: '2026-06-25',
   },
   {
     id: 'C004',
     customerCreatedAt: '2026-05-15',
     customerType: 'valid',
+    status: 'visited',
     department: '华南一部',
     consultant: '李然',
     channelCategory: '线上投放',
     channel: '信息流',
-    dispatchedAt: '2026-06-05',
-    invitedAt: '2026-06-10',
-    visitedAt: '2026-06-15',
-    convertedAt: null,
   },
   {
     id: 'C005',
     customerCreatedAt: '2026-05-01',
     customerType: 'invalid',
+    status: 'pendingWechat',
     department: '华南一部',
     consultant: '李然',
     channelCategory: '口碑推荐',
     channel: '转介绍',
-    dispatchedAt: null,
-    invitedAt: null,
-    visitedAt: null,
-    convertedAt: null,
   },
   {
     id: 'C006',
     customerCreatedAt: '2026-06-20',
     customerType: 'valid',
+    status: 'wechatAdded',
     department: '华南一部',
     consultant: '李然',
     channelCategory: '私域运营',
     channel: '私域',
-    dispatchedAt: null,
-    invitedAt: null,
-    visitedAt: null,
-    convertedAt: null,
   },
   {
     id: 'C007',
     customerCreatedAt: '2026-06-18',
     customerType: 'valid',
+    status: 'invited',
     department: '华东一部',
     consultant: '张敏',
     channelCategory: '私域运营',
     channel: '私域',
-    dispatchedAt: null,
-    invitedAt: '2026-06-20',
-    visitedAt: null,
-    convertedAt: null,
   },
 ];
 
-/** 对比期（2026-05）漏斗客户，阶段日期落在 5 月以便与 6 月环比。 */
+/** 对比期（2026-05）漏斗客户 cohort。 */
 export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
   {
     id: 'C008',
     customerCreatedAt: '2026-05-05',
     customerType: 'valid',
+    status: 'repurchased',
     department: '华东一部',
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
-    dispatchedAt: '2026-05-06',
-    invitedAt: '2026-05-08',
-    visitedAt: '2026-05-12',
-    convertedAt: '2026-05-15',
   },
   {
     id: 'C009',
     customerCreatedAt: '2026-05-12',
     customerType: 'valid',
+    status: 'dispatched',
     department: '华东一部',
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
-    dispatchedAt: '2026-05-14',
-    invitedAt: '2026-05-16',
-    visitedAt: null,
-    convertedAt: null,
   },
   {
     id: 'C010',
     customerCreatedAt: '2026-05-08',
     customerType: 'valid',
+    status: 'firstConverted',
     department: '华东一部',
     consultant: '张敏',
     channelCategory: '私域运营',
     channel: '私域',
-    dispatchedAt: '2026-05-10',
-    invitedAt: '2026-05-12',
-    visitedAt: '2026-05-18',
-    convertedAt: '2026-05-20',
   },
   {
     id: 'C011',
     customerCreatedAt: '2026-04-20',
     customerType: 'valid',
+    status: 'visited',
     department: '华南一部',
     consultant: '李然',
     channelCategory: '线上投放',
     channel: '信息流',
-    dispatchedAt: '2026-05-05',
-    invitedAt: '2026-05-09',
-    visitedAt: '2026-05-14',
-    convertedAt: null,
   },
   {
     id: 'C012',
     customerCreatedAt: '2026-05-15',
     customerType: 'valid',
+    status: 'repurchased',
     department: '华南一部',
     consultant: '李然',
     channelCategory: '私域运营',
     channel: '私域',
-    dispatchedAt: '2026-05-17',
-    invitedAt: '2026-05-19',
-    visitedAt: '2026-05-21',
-    convertedAt: '2026-05-22',
   },
   {
     id: 'C013',
     customerCreatedAt: '2026-04-01',
     customerType: 'invalid',
+    status: 'pendingWechat',
     department: '华南一部',
     consultant: '李然',
     channelCategory: '口碑推荐',
     channel: '转介绍',
-    dispatchedAt: null,
-    invitedAt: null,
-    visitedAt: null,
-    convertedAt: null,
   },
   {
     id: 'C014',
     customerCreatedAt: '2026-05-20',
     customerType: 'valid',
+    status: 'dispatched',
     department: '华南一部',
     consultant: '李然',
     channelCategory: '演示渠道',
     channel: '演示渠道 A',
-    dispatchedAt: '2026-05-21',
-    invitedAt: null,
-    visitedAt: null,
-    convertedAt: null,
   },
 ];
 

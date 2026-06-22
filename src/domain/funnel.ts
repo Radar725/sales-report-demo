@@ -1,7 +1,7 @@
 import type { TreeSelectProps } from 'antd';
 import type {
   FunnelCustomerRecord,
-  FunnelCustomerType,
+  FunnelCustomerStatus,
 } from '../data/mockFunnelCustomers';
 import type { Dimension, DimensionKey } from './dimensions';
 import { calculateChange, getDateComparisonKey } from './comparison';
@@ -17,7 +17,6 @@ export type FunnelDimensionKey =
 export type FunnelFilters = {
   dateRange: [string, string] | null;
   comparisonDateRange: [string, string] | null;
-  customerScope: 'all' | 'currentNewCustomers' | 'existingCustomers';
   customerType: 'all' | 'valid' | 'invalid';
   departments: string[];
   consultants: string[];
@@ -28,51 +27,54 @@ export type FunnelFilters = {
 export type FunnelSummaryRow = {
   key: string;
   primaryDimensionValue: string;
-  customerCount: number;
+  recordedCustomerCount: number;
+  addedWechatCustomerCount: number;
   dispatchedCustomerCount: number;
   invitedCustomerCount: number;
   visitedCustomerCount: number;
   convertedCustomerCount: number;
+  repurchasedCustomerCount: number;
+  addedWechatRate: number | null;
   dispatchRate: number | null;
   invitationRate: number | null;
   visitRate: number | null;
   conversionRate: number | null;
-  dispatchInvitationRate: number | null;
-  inviteVisitRate: number | null;
-  visitConversionRate: number | null;
+  repurchaseRate: number | null;
 };
 
 export type FunnelMetricKey =
-  | 'customerCount'
+  | 'recordedCustomerCount'
+  | 'addedWechatCustomerCount'
   | 'dispatchedCustomerCount'
   | 'invitedCustomerCount'
   | 'visitedCustomerCount'
   | 'convertedCustomerCount'
+  | 'repurchasedCustomerCount'
+  | 'addedWechatRate'
   | 'dispatchRate'
   | 'invitationRate'
   | 'visitRate'
   | 'conversionRate'
-  | 'dispatchInvitationRate'
-  | 'inviteVisitRate'
-  | 'visitConversionRate';
+  | 'repurchaseRate';
 
 export type FunnelComparisonValues = Partial<Record<FunnelMetricKey, number | null>>;
 
 export type FunnelBreakdownRow = {
   key: string;
   breakdownDimensionValue: string;
-  customerCount: number;
+  recordedCustomerCount: number;
+  addedWechatCustomerCount: number;
   dispatchedCustomerCount: number;
   invitedCustomerCount: number;
   visitedCustomerCount: number;
   convertedCustomerCount: number;
+  repurchasedCustomerCount: number;
+  addedWechatRate: number | null;
   dispatchRate: number | null;
   invitationRate: number | null;
   visitRate: number | null;
   conversionRate: number | null;
-  dispatchInvitationRate: number | null;
-  inviteVisitRate: number | null;
-  visitConversionRate: number | null;
+  repurchaseRate: number | null;
 };
 
 export type FunnelComparableSummaryRow = FunnelSummaryRow & {
@@ -96,20 +98,29 @@ export type FunnelTreeData = {
   channelTree: FunnelTreeDataNode[];
 };
 
-function isInRange(value: string | null, range: [string, string]) {
-  return value !== null && value >= range[0] && value <= range[1];
+const statusLevel: Record<FunnelCustomerStatus, number> = {
+  pendingWechat: 0,
+  wechatAdded: 1,
+  dispatched: 2,
+  invited: 3,
+  visited: 4,
+  firstConverted: 5,
+  repurchased: 6,
+};
+
+function hasReached(record: FunnelCustomerRecord, target: FunnelCustomerStatus) {
+  return statusLevel[record.status] >= statusLevel[target];
 }
 
 function ratio(numerator: number, denominator: number) {
   return denominator === 0 ? null : numerator / denominator;
 }
 
-function countUnique(customers: FunnelCustomerRecord[], getter: (r: FunnelCustomerRecord) => string | null, range: [string, string]) {
+function countReached(customers: FunnelCustomerRecord[], target: FunnelCustomerStatus) {
   const ids = new Set<string>();
-  for (const c of customers) {
-    const val = getter(c);
-    if (isInRange(val, range)) {
-      ids.add(c.id);
+  for (const customer of customers) {
+    if (hasReached(customer, target)) {
+      ids.add(customer.id);
     }
   }
   return ids.size;
@@ -117,32 +128,35 @@ function countUnique(customers: FunnelCustomerRecord[], getter: (r: FunnelCustom
 
 function countAll(customers: FunnelCustomerRecord[]) {
   const ids = new Set<string>();
-  for (const c of customers) {
-    ids.add(c.id);
+  for (const customer of customers) {
+    ids.add(customer.id);
   }
   return ids.size;
 }
 
-function calculateFunnelMetrics(customers: FunnelCustomerRecord[], dateRange: [string, string]) {
-  const customerCount = countAll(customers);
-  const dispatchedCustomerCount = countUnique(customers, (r) => r.dispatchedAt, dateRange);
-  const invitedCustomerCount = countUnique(customers, (r) => r.invitedAt, dateRange);
-  const visitedCustomerCount = countUnique(customers, (r) => r.visitedAt, dateRange);
-  const convertedCustomerCount = countUnique(customers, (r) => r.convertedAt, dateRange);
+function calculateFunnelMetrics(customers: FunnelCustomerRecord[]) {
+  const recordedCustomerCount = countAll(customers);
+  const addedWechatCustomerCount = countReached(customers, 'wechatAdded');
+  const dispatchedCustomerCount = countReached(customers, 'dispatched');
+  const invitedCustomerCount = countReached(customers, 'invited');
+  const visitedCustomerCount = countReached(customers, 'visited');
+  const convertedCustomerCount = countReached(customers, 'firstConverted');
+  const repurchasedCustomerCount = countReached(customers, 'repurchased');
 
   return {
-    customerCount,
+    recordedCustomerCount,
+    addedWechatCustomerCount,
     dispatchedCustomerCount,
     invitedCustomerCount,
     visitedCustomerCount,
     convertedCustomerCount,
-    dispatchRate: ratio(dispatchedCustomerCount, customerCount),
-    invitationRate: ratio(invitedCustomerCount, customerCount),
-    visitRate: ratio(visitedCustomerCount, customerCount),
-    conversionRate: ratio(convertedCustomerCount, customerCount),
-    dispatchInvitationRate: ratio(invitedCustomerCount, dispatchedCustomerCount),
-    inviteVisitRate: ratio(visitedCustomerCount, invitedCustomerCount),
-    visitConversionRate: ratio(convertedCustomerCount, visitedCustomerCount),
+    repurchasedCustomerCount,
+    addedWechatRate: ratio(addedWechatCustomerCount, recordedCustomerCount),
+    dispatchRate: ratio(dispatchedCustomerCount, recordedCustomerCount),
+    invitationRate: ratio(invitedCustomerCount, recordedCustomerCount),
+    visitRate: ratio(visitedCustomerCount, recordedCustomerCount),
+    conversionRate: ratio(convertedCustomerCount, recordedCustomerCount),
+    repurchaseRate: ratio(repurchasedCustomerCount, recordedCustomerCount),
   };
 }
 
@@ -151,8 +165,7 @@ export function filterFunnelCustomers(
   filters: FunnelFilters,
 ): FunnelCustomerRecord[] {
   return records.filter((record) => {
-    // customer scope: filter by customerCreatedAt relative to dateRange
-    if (filters.dateRange && filters.customerScope === 'currentNewCustomers') {
+    if (filters.dateRange) {
       if (
         record.customerCreatedAt < filters.dateRange[0] ||
         record.customerCreatedAt > filters.dateRange[1]
@@ -160,18 +173,11 @@ export function filterFunnelCustomers(
         return false;
       }
     }
-    if (filters.dateRange && filters.customerScope === 'existingCustomers') {
-      if (record.customerCreatedAt >= filters.dateRange[0]) {
-        return false;
-      }
-    }
 
-    // customer type
     if (filters.customerType !== 'all' && record.customerType !== filters.customerType) {
       return false;
     }
 
-    // departments / consultants
     if (
       filters.departments.length > 0 &&
       !filters.departments.includes(record.department)
@@ -185,7 +191,6 @@ export function filterFunnelCustomers(
       return false;
     }
 
-    // channel categories / channels
     if (
       filters.channelCategories.length > 0 &&
       !filters.channelCategories.includes(record.channelCategory)
@@ -215,11 +220,10 @@ function getFunnelRowKey(dimension: FunnelDimensionKey, value: string) {
 
 export function buildFunnelSummaryRows(
   records: FunnelCustomerRecord[],
-  dateRange: [string, string],
   dimension: FunnelDimensionKey,
 ): FunnelSummaryRow[] {
   if (dimension === 'total') {
-    const metrics = calculateFunnelMetrics(records, dateRange);
+    const metrics = calculateFunnelMetrics(records);
     return [
       {
         key: 'total',
@@ -241,19 +245,18 @@ export function buildFunnelSummaryRows(
     .map(([value, groupRecords]) => ({
       key: getFunnelRowKey(dimension, value),
       primaryDimensionValue: value,
-      ...calculateFunnelMetrics(groupRecords, dateRange),
+      ...calculateFunnelMetrics(groupRecords),
     }))
     .sort((left, right) => {
       if (dimension === 'date') {
         return left.primaryDimensionValue.localeCompare(right.primaryDimensionValue);
       }
-      return right.customerCount - left.customerCount;
+      return right.recordedCustomerCount - left.recordedCustomerCount;
     });
 }
 
 export function buildFunnelBreakdownRows(
   records: FunnelCustomerRecord[],
-  dateRange: [string, string],
   query: FunnelBreakdownQuery,
 ): FunnelBreakdownRow[] {
   const scopedRecords = records.filter(
@@ -278,29 +281,30 @@ export function buildFunnelBreakdownRows(
     .map(([value, groupRecords]) => ({
       key: getFunnelRowKey(query.breakdownDimension, value),
       breakdownDimensionValue: value,
-      ...calculateFunnelMetrics(groupRecords, dateRange),
+      ...calculateFunnelMetrics(groupRecords),
     }))
     .sort((left, right) => {
       if (query.breakdownDimension === 'date') {
         return left.breakdownDimensionValue.localeCompare(right.breakdownDimensionValue);
       }
-      return right.customerCount - left.customerCount;
+      return right.recordedCustomerCount - left.recordedCustomerCount;
     });
 }
 
 const FUNNEL_METRIC_KEYS: FunnelMetricKey[] = [
-  'customerCount',
+  'recordedCustomerCount',
+  'addedWechatCustomerCount',
   'dispatchedCustomerCount',
   'invitedCustomerCount',
   'visitedCustomerCount',
   'convertedCustomerCount',
+  'repurchasedCustomerCount',
+  'addedWechatRate',
   'dispatchRate',
   'invitationRate',
   'visitRate',
   'conversionRate',
-  'dispatchInvitationRate',
-  'inviteVisitRate',
-  'visitConversionRate',
+  'repurchaseRate',
 ];
 
 function isDateDimensionValue(value: string) {
@@ -407,12 +411,6 @@ export function getFunnelBreakdownDimensions(
   const primaryDimension = funnelDimensions.find((d) => d.key === primaryKey)!;
   return funnelDimensions.filter((dimension) =>
     canBreakDown(primaryDimension, dimension),
-  );
-}
-
-function uniqueSorted(values: string[]): string[] {
-  return [...new Set(values)].sort((left, right) =>
-    left.localeCompare(right, 'zh-Hans-CN'),
   );
 }
 
