@@ -32,6 +32,7 @@ it('opens a funnel breakdown drawer with only allowed dimensions', async () => {
       primaryDimension={{ key: 'department', label: '部门' }}
       rows={[departmentRow]}
       filters={allFilters}
+      hasComparison={false}
       onOpenBreakdown={openDrawer}
     />,
   );
@@ -45,6 +46,7 @@ it('disables breakdown for total rows', () => {
       primaryDimension={{ key: 'total', label: '汇总' }}
       rows={[totalRow]}
       filters={allFilters}
+      hasComparison={false}
       onOpenBreakdown={vi.fn()}
     />,
   );

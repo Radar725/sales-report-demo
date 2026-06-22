@@ -10,6 +10,7 @@ type FunnelTableProps = {
   primaryDimension: { key: string; label: string };
   rows: FunnelSummaryRow[];
   filters: FunnelColumnFilters;
+  hasComparison: boolean;
   onOpenBreakdown: (row: FunnelSummaryRow) => void;
 };
 
@@ -17,6 +18,7 @@ export function FunnelTable({
   primaryDimension,
   rows,
   filters,
+  hasComparison,
   onOpenBreakdown,
 }: FunnelTableProps) {
   const columns: ColumnsType<FunnelSummaryRow> = [
@@ -27,7 +29,7 @@ export function FunnelTable({
       fixed: 'left',
       width: 140,
     },
-    ...buildFunnelMetricColumns<FunnelSummaryRow>(filters),
+    ...buildFunnelMetricColumns<FunnelSummaryRow>(filters, hasComparison),
     {
       title: '操作',
       key: 'actions',

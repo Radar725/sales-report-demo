@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
 import { describe, expect, it } from 'vitest';
 import App from './App';
+import { getDefaultComparisonDateRange } from './domain/comparison';
 
 async function selectOption(user: ReturnType<typeof userEvent.setup>, label: string, option: string) {
   const formItem = screen.getByText(label).closest('.ant-form-item')!;
@@ -24,11 +26,20 @@ async function selectPrimaryDimension(user: ReturnType<typeof userEvent.setup>, 
 }
 
 async function setDateRange(user: ReturnType<typeof userEvent.setup>) {
-  const inputs = document.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
+  const statsTime = screen.getAllByText('统计时间')[0].closest('.ant-form-item')!;
+  const inputs = statsTime.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
   await user.clear(inputs[0]);
   await user.type(inputs[0], '2026-06-01');
   await user.clear(inputs[1]);
   await user.type(inputs[1], '2026-06-30');
+}
+
+function getComparisonFormItem() {
+  return screen.getByText('对比时间').closest('.ant-form-item')!;
+}
+
+function getComparisonInputs() {
+  return getComparisonFormItem().querySelectorAll<HTMLInputElement>('.ant-picker-input input');
 }
 
 describe('App', () => {
@@ -286,6 +297,83 @@ describe('App', () => {
     // performance tab should still have 新客 as customer scope
     const perfScopeItems = screen.getAllByText('客户统计范围');
     expect(perfScopeItems[0].closest('.ant-form-item')).toHaveTextContent('新客');
+  });
+
+  it('shows the default comparison date range on load', () => {
+    render(<App />);
+    const [start, end] = getDefaultComparisonDateRange(dayjs());
+    const inputs = getComparisonInputs();
+    expect(inputs[0].value).toBe(start);
+    expect(inputs[1].value).toBe(end);
+  });
+
+  it('keeps a cleared comparison range after the statistic range changes', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const comparison = getComparisonFormItem();
+    fireEvent.mouseEnter(comparison);
+    fireEvent.mouseDown(comparison.querySelector('.ant-picker-clear')!);
+    fireEvent.click(comparison.querySelector('.ant-picker-clear')!);
+    await setDateRange(user);
+    expect(getComparisonInputs()[0].value).toBe('');
+  });
+
+  it('restores the default comparison range after reset', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const comparison = getComparisonFormItem();
+    fireEvent.mouseEnter(comparison);
+    fireEvent.mouseDown(comparison.querySelector('.ant-picker-clear')!);
+    fireEvent.click(comparison.querySelector('.ant-picker-clear')!);
+    await user.click(within(document.querySelector('.filter-bar')!).getByRole('button', { name: '重 置' }));
+    const [start, end] = getDefaultComparisonDateRange(dayjs());
+    const inputs = getComparisonInputs();
+    expect(inputs[0].value).toBe(start);
+    expect(inputs[1].value).toBe(end);
+  });
+
+  it('shows comparison change indicators in the performance summary after query', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await setDateRange(user);
+    await applyFilters(user);
+    expect(document.querySelector('.report-table .metric-change')).toBeTruthy();
+    const changeText = document.querySelector('.report-table')!.textContent ?? '';
+    expect(changeText).toMatch(/↑|↓|—/);
+  });
+
+  it('shows comparison change indicators in the performance breakdown drawer', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await setDateRange(user);
+    await applyFilters(user);
+    await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
+    const breakdownDrawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    expect(breakdownDrawer.querySelector('.metric-change')).toBeTruthy();
+  });
+
+  it('does not show comparison change indicators in the performance detail drawer', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await setDateRange(user);
+    await applyFilters(user);
+    const detailButtons = await screen.findAllByRole('button', { name: '业绩明细' });
+    await user.click(detailButtons[0]);
+    const detailDrawer = await screen.findByRole('dialog');
+    expect(detailDrawer.querySelector('.metric-change')).toBeNull();
+  });
+
+  it('shows comparison change indicators in the funnel summary and breakdown drawer', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('tab', { name: '转化漏斗报表' }));
+    const queryBtns = screen.getAllByRole('button', { name: '查 询' });
+    await user.click(queryBtns[queryBtns.length - 1]);
+    expect(document.querySelector('.report-table .metric-change')).toBeTruthy();
+
+    await user.click(screen.getAllByRole('button', { name: '维度拆解' })[0]);
+    const funnelDrawer = screen.getByRole('dialog', { name: /转化漏斗拆解/ });
+    expect(funnelDrawer.querySelector('.metric-change')).toBeTruthy();
   });
 
 });

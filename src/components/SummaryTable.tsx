@@ -8,6 +8,7 @@ type SummaryTableProps = {
   primaryDimension: Dimension;
   rows: ReportSummaryRow[];
   filters: ReportColumnFilters;
+  hasComparison: boolean;
   onOpenBreakdown: (row: ReportSummaryRow) => void;
   onOpenDetails: (row: ReportSummaryRow) => void;
 };
@@ -16,6 +17,7 @@ export default function SummaryTable({
   primaryDimension,
   rows,
   filters,
+  hasComparison,
   onOpenBreakdown,
   onOpenDetails,
 }: SummaryTableProps) {
@@ -27,7 +29,7 @@ export default function SummaryTable({
       fixed: 'left',
       width: 140,
     },
-    ...buildReportMetricColumns<ReportSummaryRow>(filters),
+    ...buildReportMetricColumns<ReportSummaryRow>(filters, hasComparison),
     {
       title: '操作',
       key: 'actions',

@@ -23,6 +23,7 @@ function matchesCustomerScope(
 
 export type SalesDashboardFilters = {
   dateRange: [string, string] | null;
+  comparisonDateRange: [string, string] | null;
   departments: string[];
   consultants: string[];
   dealType: DealTypeFilter;

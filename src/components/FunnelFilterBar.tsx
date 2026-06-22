@@ -2,6 +2,7 @@ import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import type { FunnelCustomerRecord } from '../data/mockFunnelCustomers';
+import { getDefaultComparisonDateRange } from '../domain/comparison';
 import {
   buildFunnelTreeData,
   type FunnelFilters,
@@ -60,6 +61,7 @@ const presets: NonNullable<
 
 const defaultFunnelFiltersReset: FunnelFilters = {
   dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
+  comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
   customerScope: 'currentNewCustomers',
   customerType: 'valid',
   departments: [],
@@ -103,11 +105,7 @@ export default function FunnelFilterBar({
 
   return (
     <Form layout="inline" className="filter-bar">
-      <Form.Item
-        label="统计时间"
-        required
-        rules={[{ required: true, message: '请选择统计时间' }]}
-      >
+      <Form.Item label="统计时间">
         <DatePicker.RangePicker
           allowClear={false}
           presets={presets}
@@ -120,6 +118,27 @@ export default function FunnelFilterBar({
             setLocalFilters((prev) => ({
               ...prev,
               dateRange:
+                dateStrings[0] && dateStrings[1]
+                  ? [dateStrings[0], dateStrings[1]]
+                  : null,
+            }));
+          }}
+        />
+      </Form.Item>
+
+      <Form.Item label="对比时间">
+        <DatePicker.RangePicker
+          allowClear
+          presets={presets}
+          value={
+            localFilters.comparisonDateRange?.map((date) => dayjs(date)) as
+              | [dayjs.Dayjs, dayjs.Dayjs]
+              | undefined
+          }
+          onChange={(_, dateStrings) => {
+            setLocalFilters((prev) => ({
+              ...prev,
+              comparisonDateRange:
                 dateStrings[0] && dateStrings[1]
                   ? [dateStrings[0], dateStrings[1]]
                   : null,

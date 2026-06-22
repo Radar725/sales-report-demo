@@ -2,6 +2,7 @@ import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import type { DealRecord } from '../data/mockDeals';
+import { getDefaultComparisonDateRange } from '../domain/comparison';
 import {
   buildTreeData,
   getFilterOptions,
@@ -59,6 +60,7 @@ const todayRange: [string, string] = [dayjs().startOf('month').format('YYYY-MM-D
 
 const defaultFiltersReset: SalesDashboardFilters = {
   dateRange: todayRange,
+  comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
   departments: [],
   consultants: [],
   dealType: 'all',
@@ -127,6 +129,24 @@ export default function FilterBar({
             setLocalFilters((prev) => ({
               ...prev,
               dateRange:
+                dateStrings[0] && dateStrings[1] ? [dateStrings[0], dateStrings[1]] : null,
+            }));
+          }}
+        />
+      </Form.Item>
+      <Form.Item label="对比时间">
+        <DatePicker.RangePicker
+          allowClear
+          presets={presets}
+          value={
+            localFilters.comparisonDateRange?.map((date) => dayjs(date)) as
+              | [dayjs.Dayjs, dayjs.Dayjs]
+              | undefined
+          }
+          onChange={(_, dateStrings) => {
+            setLocalFilters((prev) => ({
+              ...prev,
+              comparisonDateRange:
                 dateStrings[0] && dateStrings[1] ? [dateStrings[0], dateStrings[1]] : null,
             }));
           }}

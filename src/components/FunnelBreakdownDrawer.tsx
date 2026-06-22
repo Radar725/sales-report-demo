@@ -2,6 +2,7 @@ import { Drawer, Space, Table, Tabs } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { FunnelCustomerRecord } from '../data/mockFunnelCustomers';
 import {
+  attachFunnelComparison,
   buildFunnelBreakdownRows,
   getFunnelBreakdownDimensions,
   type FunnelBreakdownRow,
@@ -17,6 +18,8 @@ type FunnelBreakdownDrawerProps = {
   open: boolean;
   records: FunnelCustomerRecord[];
   dateRange: [string, string];
+  comparisonRecords: FunnelCustomerRecord[];
+  comparisonDateRange: [string, string] | null;
   primaryDimension: { key: FunnelDimensionKey; label: string };
   row: FunnelSummaryRow | null;
   filters: FunnelColumnFilters;
@@ -27,12 +30,15 @@ export default function FunnelBreakdownDrawer({
   open,
   records,
   dateRange,
+  comparisonRecords,
+  comparisonDateRange,
   primaryDimension,
   row,
   filters,
   onClose,
 }: FunnelBreakdownDrawerProps) {
   const breakdownDimensions = getFunnelBreakdownDimensions(primaryDimension.key);
+  const hasComparison = comparisonDateRange !== null;
 
   return (
     <Drawer
@@ -44,11 +50,22 @@ export default function FunnelBreakdownDrawer({
       {row ? (
         <Tabs
           items={breakdownDimensions.map((breakdownDimension) => {
-            const dataSource = buildFunnelBreakdownRows(records, dateRange, {
+            const query = {
               primaryDimension: primaryDimension.key,
               primaryDimensionValue: row.primaryDimensionValue,
               breakdownDimension: breakdownDimension.key as FunnelDimensionKey,
-            });
+            };
+            const currentRows = buildFunnelBreakdownRows(records, dateRange, query);
+            const dataSource =
+              hasComparison && comparisonDateRange
+                ? attachFunnelComparison(
+                    currentRows,
+                    buildFunnelBreakdownRows(comparisonRecords, comparisonDateRange, query),
+                    dateRange,
+                    comparisonDateRange,
+                    'breakdownDimensionValue',
+                  )
+                : currentRows;
 
             const columns: ColumnsType<FunnelBreakdownRow> = [
               {
@@ -58,7 +75,7 @@ export default function FunnelBreakdownDrawer({
                 fixed: 'left',
                 width: 140,
               },
-              ...buildFunnelMetricColumns<FunnelBreakdownRow>(filters),
+              ...buildFunnelMetricColumns<FunnelBreakdownRow>(filters, hasComparison),
             ];
 
             return {

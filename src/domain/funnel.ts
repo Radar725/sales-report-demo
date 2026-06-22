@@ -16,6 +16,7 @@ export type FunnelDimensionKey =
 
 export type FunnelFilters = {
   dateRange: [string, string] | null;
+  comparisonDateRange: [string, string] | null;
   customerScope: 'all' | 'currentNewCustomers' | 'existingCustomers';
   customerType: 'all' | 'valid' | 'invalid';
   departments: string[];

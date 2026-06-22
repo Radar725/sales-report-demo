@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import type { DealRecord } from '../data/mockDeals';
 import {
+  attachReportComparison,
   buildReportBreakdownRows,
   getBreakdownDetailRecords,
   type ReportBreakdownRow,
@@ -16,6 +17,10 @@ type BreakdownDrawerProps = {
   open: boolean;
   records: DealRecord[];
   baselineRecords: DealRecord[];
+  dateRange: [string, string] | null;
+  comparisonRecords: DealRecord[];
+  comparisonBaselineRecords: DealRecord[];
+  comparisonDateRange: [string, string] | null;
   primaryDimension: DimensionKey;
   row: ReportSummaryRow | null;
   filters: ReportColumnFilters;
@@ -26,12 +31,17 @@ export default function BreakdownDrawer({
   open,
   records,
   baselineRecords,
+  dateRange,
+  comparisonRecords,
+  comparisonBaselineRecords,
+  comparisonDateRange,
   primaryDimension,
   row,
   filters,
   onClose,
 }: BreakdownDrawerProps) {
   const breakdownDimensions = getBreakdownDimensions(primaryDimension);
+  const hasComparison = comparisonDateRange !== null;
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailTitle, setDetailTitle] = useState('');
   const [detailRecords, setDetailRecords] = useState<DealRecord[]>([]);
@@ -47,11 +57,29 @@ export default function BreakdownDrawer({
         <>
           <Tabs
             items={breakdownDimensions.map((breakdownDimension) => {
-              const dataSource = buildReportBreakdownRows(records, baselineRecords, {
+              const currentRows = buildReportBreakdownRows(records, baselineRecords, {
                 primaryDimension,
                 primaryDimensionValue: row.primaryDimensionValue,
                 breakdownDimension: breakdownDimension.key,
               });
+              const dataSource =
+                hasComparison && comparisonDateRange && dateRange
+                  ? attachReportComparison(
+                      currentRows,
+                      buildReportBreakdownRows(
+                        comparisonRecords,
+                        comparisonBaselineRecords,
+                        {
+                          primaryDimension,
+                          primaryDimensionValue: row.primaryDimensionValue,
+                          breakdownDimension: breakdownDimension.key,
+                        },
+                      ),
+                      dateRange,
+                      comparisonDateRange,
+                      'breakdownDimensionValue',
+                    )
+                  : currentRows;
               const columns: ColumnsType<ReportBreakdownRow> = [
                 {
                   title: breakdownDimension.label,
@@ -60,7 +88,7 @@ export default function BreakdownDrawer({
                   fixed: 'left',
                   width: 140,
                 },
-                ...buildReportMetricColumns<ReportBreakdownRow>(filters),
+                ...buildReportMetricColumns<ReportBreakdownRow>(filters, hasComparison),
                 {
                   title: '操作',
                   key: 'actions',

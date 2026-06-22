@@ -4,6 +4,7 @@ import { buildTreeData, createBaselineFilters, filterDealRecords, getFilterOptio
 
 const defaultFilters: SalesDashboardFilters = {
   dateRange: null,
+  comparisonDateRange: null,
   departments: [],
   consultants: [],
   dealType: 'all',

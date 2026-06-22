@@ -11,13 +11,16 @@ import SummaryTable from './components/SummaryTable';
 import { mockDeals } from './data/mockDeals';
 import { mockFunnelCustomers } from './data/mockFunnelCustomers';
 import {
+  attachReportComparison,
   buildReportSummaryRows,
   getDetailRecords,
   type ReportSummaryRow,
 } from './domain/analytics';
+import { getDefaultComparisonDateRange } from './domain/comparison';
 import { dimensions, getDimension, type DimensionKey } from './domain/dimensions';
 import { createBaselineFilters, filterDealRecords, type SalesDashboardFilters } from './domain/filters';
 import {
+  attachFunnelComparison,
   buildFunnelSummaryRows,
   filterFunnelCustomers,
   type FunnelDimensionKey,
@@ -29,6 +32,7 @@ const today = dayjs().format('YYYY-MM-DD');
 
 const defaultFilters: SalesDashboardFilters = {
   dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), today],
+  comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
   departments: [],
   consultants: [],
   dealType: 'all',
@@ -44,6 +48,7 @@ const defaultFilters: SalesDashboardFilters = {
 
 const defaultFunnelFilters: FunnelFilters = {
   dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), today],
+  comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
   customerScope: 'currentNewCustomers',
   customerType: 'valid',
   departments: [],
@@ -78,16 +83,58 @@ export default function App() {
     () => filterDealRecords(mockDeals, createBaselineFilters(filters)),
     [filters],
   );
-  const primaryDimensionConfig = getDimension(primaryDimension);
-  const summaryRows = useMemo(
+  const hasPerformanceComparison = filters.comparisonDateRange !== null;
+  const comparisonFilters = useMemo(
     () =>
-      buildReportSummaryRows(
-        filteredRecords,
-        baselineRecords,
-        primaryDimension,
-      ),
-    [filteredRecords, baselineRecords, primaryDimension],
+      hasPerformanceComparison
+        ? { ...filters, dateRange: filters.comparisonDateRange }
+        : null,
+    [filters, hasPerformanceComparison],
   );
+  const comparisonFilteredRecords = useMemo(
+    () =>
+      comparisonFilters ? filterDealRecords(mockDeals, comparisonFilters) : [],
+    [comparisonFilters],
+  );
+  const comparisonBaselineRecords = useMemo(
+    () =>
+      comparisonFilters
+        ? filterDealRecords(mockDeals, createBaselineFilters(comparisonFilters))
+        : [],
+    [comparisonFilters],
+  );
+  const primaryDimensionConfig = getDimension(primaryDimension);
+  const summaryRows = useMemo(() => {
+    const currentRows = buildReportSummaryRows(
+      filteredRecords,
+      baselineRecords,
+      primaryDimension,
+    );
+    if (!hasPerformanceComparison || !filters.comparisonDateRange || !filters.dateRange) {
+      return currentRows;
+    }
+    const comparisonRows = buildReportSummaryRows(
+      comparisonFilteredRecords,
+      comparisonBaselineRecords,
+      primaryDimension,
+    );
+    return attachReportComparison(
+      currentRows,
+      comparisonRows,
+      filters.dateRange,
+      filters.comparisonDateRange,
+      'primaryDimensionValue',
+    );
+  }, [
+    filteredRecords,
+    baselineRecords,
+    primaryDimension,
+    hasPerformanceComparison,
+    comparisonFilteredRecords,
+    comparisonBaselineRecords,
+    filters.dateRange,
+    filters.comparisonDateRange,
+  ]);
   const detailRecords = useMemo(
     () =>
       selectedDetailRow
@@ -104,17 +151,53 @@ export default function App() {
     () => filterFunnelCustomers(mockFunnelCustomers, funnelFilters),
     [funnelFilters],
   );
-  const funnelSummaryRows = useMemo(
+  const hasFunnelComparison = funnelFilters.comparisonDateRange !== null;
+  const comparisonFunnelFilters = useMemo(
     () =>
-      funnelFilters.dateRange
-        ? buildFunnelSummaryRows(
-            filteredFunnelCustomers,
-            funnelFilters.dateRange,
-            funnelPrimaryDimension,
-          )
-        : [],
-    [filteredFunnelCustomers, funnelFilters.dateRange, funnelPrimaryDimension],
+      hasFunnelComparison
+        ? { ...funnelFilters, dateRange: funnelFilters.comparisonDateRange }
+        : null,
+    [funnelFilters, hasFunnelComparison],
   );
+  const comparisonFunnelCustomers = useMemo(
+    () =>
+      comparisonFunnelFilters
+        ? filterFunnelCustomers(mockFunnelCustomers, comparisonFunnelFilters)
+        : [],
+    [comparisonFunnelFilters],
+  );
+  const funnelSummaryRows = useMemo(() => {
+    if (!funnelFilters.dateRange) {
+      return [];
+    }
+    const currentRows = buildFunnelSummaryRows(
+      filteredFunnelCustomers,
+      funnelFilters.dateRange,
+      funnelPrimaryDimension,
+    );
+    if (!hasFunnelComparison || !funnelFilters.comparisonDateRange) {
+      return currentRows;
+    }
+    const comparisonRows = buildFunnelSummaryRows(
+      comparisonFunnelCustomers,
+      funnelFilters.comparisonDateRange,
+      funnelPrimaryDimension,
+    );
+    return attachFunnelComparison(
+      currentRows,
+      comparisonRows,
+      funnelFilters.dateRange,
+      funnelFilters.comparisonDateRange,
+      'primaryDimensionValue',
+    );
+  }, [
+    filteredFunnelCustomers,
+    comparisonFunnelCustomers,
+    funnelFilters.dateRange,
+    funnelFilters.comparisonDateRange,
+    funnelPrimaryDimension,
+    hasFunnelComparison,
+  ]);
 
   return (
     <main className="app-shell">
@@ -164,6 +247,7 @@ export default function App() {
                     primaryDimension={primaryDimensionConfig}
                     rows={summaryRows}
                     filters={{ customerScope: filters.customerScope, dealType: filters.dealType }}
+                    hasComparison={hasPerformanceComparison}
                     onOpenBreakdown={setSelectedBreakdownRow}
                     onOpenDetails={setSelectedDetailRow}
                   />
@@ -173,6 +257,10 @@ export default function App() {
                   open={selectedBreakdownRow !== null}
                   records={filteredRecords}
                   baselineRecords={baselineRecords}
+                  dateRange={filters.dateRange}
+                  comparisonRecords={comparisonFilteredRecords}
+                  comparisonBaselineRecords={comparisonBaselineRecords}
+                  comparisonDateRange={filters.comparisonDateRange}
                   primaryDimension={primaryDimension}
                   row={selectedBreakdownRow}
                   filters={{ customerScope: filters.customerScope, dealType: filters.dealType }}
@@ -234,6 +322,7 @@ export default function App() {
                       customerScope: funnelFilters.customerScope,
                       customerType: funnelFilters.customerType,
                     }}
+                    hasComparison={hasFunnelComparison}
                     onOpenBreakdown={setSelectedFunnelBreakdownRow}
                   />
                 </Card>
@@ -242,6 +331,8 @@ export default function App() {
                   open={selectedFunnelBreakdownRow !== null}
                   records={filteredFunnelCustomers}
                   dateRange={funnelFilters.dateRange ?? ['', '']}
+                  comparisonRecords={comparisonFunnelCustomers}
+                  comparisonDateRange={funnelFilters.comparisonDateRange}
                   primaryDimension={
                     funnelDimensions.find((d) => d.key === funnelPrimaryDimension) ?? funnelDimensions[0]
                   }
