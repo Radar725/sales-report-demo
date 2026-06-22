@@ -15,12 +15,14 @@ type FunnelMetricDef = {
 
 const funnelMetrics: FunnelMetricDef[] = [
   { key: 'recordedCustomerCount', label: '录单客户数', format: 'integer', width: 120 },
+  { key: 'validCustomerCount', label: '有效客户数', format: 'integer', width: 120 },
   { key: 'addedWechatCustomerCount', label: '已加微客户数', format: 'integer', width: 132 },
   { key: 'dispatchedCustomerCount', label: '已派单客户数', format: 'integer', width: 132 },
   { key: 'invitedCustomerCount', label: '已邀约客户数', format: 'integer', width: 132 },
   { key: 'visitedCustomerCount', label: '已到院客户数', format: 'integer', width: 132 },
   { key: 'convertedCustomerCount', label: '已成交客户数', format: 'integer', width: 132 },
   { key: 'repurchasedCustomerCount', label: '已复购客户数', format: 'integer', width: 132 },
+  { key: 'validCustomerRate', label: '有效客户率', format: 'percent', width: 112 },
   { key: 'addedWechatRate', label: '加微率', format: 'percent', width: 104 },
   { key: 'dispatchRate', label: '派单率', format: 'percent', width: 104 },
   { key: 'invitationRate', label: '邀约率', format: 'percent', width: 104 },
