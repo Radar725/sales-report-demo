@@ -52,6 +52,7 @@ const presets: NonNullable<
   },
   { label: '近7天', value: [dayjs().subtract(7, 'day'), dayjs()] },
   { label: '近30天', value: [dayjs().subtract(30, 'day'), dayjs()] },
+  { label: '近90天', value: [dayjs().subtract(90, 'day'), dayjs()] },
 ];
 
 const todayRange: [string, string] = [dayjs().startOf('month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];

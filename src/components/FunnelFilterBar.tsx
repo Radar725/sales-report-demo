@@ -1,6 +1,6 @@
-import { Button, DatePicker, Form, Select, TreeSelect } from 'antd';
+import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FunnelCustomerRecord } from '../data/mockFunnelCustomers';
 import {
   buildFunnelTreeData,
@@ -55,19 +55,46 @@ const presets: NonNullable<
   },
   { label: '近7天', value: [dayjs().subtract(7, 'day'), dayjs()] },
   { label: '近30天', value: [dayjs().subtract(30, 'day'), dayjs()] },
+  { label: '近90天', value: [dayjs().subtract(90, 'day'), dayjs()] },
 ];
+
+const defaultFunnelFiltersReset: FunnelFilters = {
+  dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
+  customerScope: 'currentNewCustomers',
+  customerType: 'valid',
+  departments: [],
+  consultants: [],
+  channelCategories: [],
+  channels: [],
+};
 
 export default function FunnelFilterBar({
   filters,
   records,
   onFiltersChange,
 }: FunnelFilterBarProps) {
-  const [localFilters, setLocalFilters] = useState<FunnelFilters>(filters);
+  const [localFilters, setLocalFilters] = useState<FunnelFilters>(() => ({
+    ...defaultFunnelFiltersReset,
+    ...filters,
+  }));
 
   const treeData = useMemo(() => buildFunnelTreeData(records), [records]);
 
+  useEffect(() => {
+    setLocalFilters({
+      ...defaultFunnelFiltersReset,
+      ...filters,
+    });
+  }, [filters]);
+
   function handleQuery() {
     onFiltersChange(localFilters);
+  }
+
+  function handleReset() {
+    const reset = { ...defaultFunnelFiltersReset };
+    setLocalFilters(reset);
+    onFiltersChange(reset);
   }
 
   function getParentValues(tree: FunnelTreeDataNode[]): Set<string> {
@@ -180,9 +207,13 @@ export default function FunnelFilterBar({
       </Form.Item>
 
       <Form.Item>
-        <Button type="primary" onClick={handleQuery}>
-          查询
-        </Button>
+        <Space>
+          <Button type="primary" onClick={handleQuery}>
+            查询
+          </Button>
+          <Button onClick={handleReset}>重置</Button>
+          <Button type="primary">导出数据</Button>
+        </Space>
       </Form.Item>
     </Form>
   );

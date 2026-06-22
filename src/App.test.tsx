@@ -223,7 +223,7 @@ describe('App', () => {
     // funnel tab has 漏斗主维度 combobox
     expect(screen.getByRole('combobox', { name: '漏斗主维度' })).toBeInTheDocument();
     // funnel tab shows prefixed column headers
-    expect(screen.getByRole('columnheader', { name: '新客有效客户数' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '新客客户数' })).toBeInTheDocument();
   });
 
   it('removes funnel header prefix when both filters are all', async () => {

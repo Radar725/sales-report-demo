@@ -207,7 +207,7 @@ export default function App() {
                 <Card className="content-card">
                   <div className="report-toolbar">
                     <Space>
-                      <span className="report-toolbar-label">漏斗主维度</span>
+                      <span className="report-toolbar-label">主维度</span>
                       <Select
                         value={funnelPrimaryDimension}
                         style={{ width: 140 }}

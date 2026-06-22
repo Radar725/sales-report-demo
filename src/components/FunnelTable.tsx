@@ -33,6 +33,7 @@ export function FunnelTable({
       key: 'actions',
       fixed: 'right',
       width: 100,
+      onCell: () => ({ style: { textAlign: 'center' } }),
       render: (_, row) => (
         <Button
           type="link"

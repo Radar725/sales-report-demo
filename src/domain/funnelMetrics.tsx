@@ -12,14 +12,8 @@ const scopeLabel: Record<FunnelColumnFilters['customerScope'], string> = {
   existingCustomers: '老客',
 };
 
-const typeLabel: Record<FunnelColumnFilters['customerType'], string> = {
-  all: '',
-  valid: '有效',
-  invalid: '无效',
-};
-
 function prefix(filters: FunnelColumnFilters) {
-  return `${scopeLabel[filters.customerScope]}${typeLabel[filters.customerType]}`;
+  return scopeLabel[filters.customerScope];
 }
 
 type FunnelMetricDef = {
