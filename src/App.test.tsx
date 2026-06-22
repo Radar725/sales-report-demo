@@ -25,6 +25,10 @@ async function selectPrimaryDimension(user: ReturnType<typeof userEvent.setup>, 
   await user.click(await screen.findByRole('option', { name: option }));
 }
 
+async function openFunnelReport(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('tab', { name: '转化漏斗报表' }));
+}
+
 async function setDateRange(user: ReturnType<typeof userEvent.setup>) {
   const statsTime = screen.getAllByText('统计时间')[0].closest('.ant-form-item')!;
   const inputs = statsTime.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
@@ -225,63 +229,42 @@ describe('App', () => {
     }
   });
 
+  it('uses recorded-at time and omits customer scope in the funnel filters', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openFunnelReport(user);
+    expect(screen.getByText('录单时间')).toBeInTheDocument();
+    expect(screen.queryByText('客户统计范围')).not.toBeInTheDocument();
+  });
+
+  it('shows fixed status cohort columns in the funnel table', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openFunnelReport(user);
+    for (const name of ['录单客户数', '已加微客户数', '已复购客户数', '复购率']) {
+      expect(screen.getByRole('columnheader', { name })).toBeInTheDocument();
+    }
+  });
+
   it('shows funnel tab with default controls after switching tabs', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('tab', { name: '转化漏斗报表' }));
+    await openFunnelReport(user);
 
-    // funnel tab has 漏斗主维度 combobox
     expect(screen.getByRole('combobox', { name: '漏斗主维度' })).toBeInTheDocument();
-    // funnel tab shows prefixed column headers
-    expect(screen.getByRole('columnheader', { name: '新客客户数' })).toBeInTheDocument();
-  });
-
-  it('removes funnel header prefix when both filters are all', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole('tab', { name: '转化漏斗报表' }));
-
-    // switch funnel scope to 全部
-    const scopeItems = screen.getAllByText('客户统计范围');
-    const scopeFormItem = scopeItems[scopeItems.length - 1].closest('.ant-form-item')!;
-    fireEvent.mouseDown(scopeFormItem.querySelector('.ant-select-selector')!);
-    await waitFor(() => {
-      expect(document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toBeTruthy();
-    });
-    // click 全部 from the visible dropdown
-    const dropdownContainer = document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')!;
-    const allOption = within(dropdownContainer as HTMLElement).getByText('全部');
-    fireEvent.click(allOption);
-
-    // switch funnel type to 全部
-    const typeItems = screen.getAllByText('客户类型');
-    const typeFormItem = typeItems[typeItems.length - 1].closest('.ant-form-item')!;
-    fireEvent.mouseDown(typeFormItem.querySelector('.ant-select-selector')!);
-    await waitFor(() => {
-      expect(document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toBeTruthy();
-    });
-    const dropdownContainer2 = document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')!;
-    const allOption2 = within(dropdownContainer2 as HTMLElement).getByText('全部');
-    fireEvent.click(allOption2);
-
-    // click 查询
-    const queryBtns = screen.getAllByRole('button', { name: '查 询' });
-    await user.click(queryBtns[queryBtns.length - 1]);
-
-    expect(screen.getByRole('columnheader', { name: '客户数' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '录单客户数' })).toBeInTheDocument();
   });
 
   it('keeps performance filter state isolated from funnel changes', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('tab', { name: '转化漏斗报表' }));
+    await openFunnelReport(user);
 
-    const scopeItems = screen.getAllByText('客户统计范围');
-    const funnelScopeFormItem = scopeItems[scopeItems.length - 1].closest('.ant-form-item')!;
-    fireEvent.mouseDown(funnelScopeFormItem.querySelector('.ant-select-selector')!);
+    const typeItems = screen.getAllByText('客户类型');
+    const funnelTypeFormItem = typeItems[typeItems.length - 1].closest('.ant-form-item')!;
+    fireEvent.mouseDown(funnelTypeFormItem.querySelector('.ant-select-selector')!);
     await waitFor(() => {
       expect(document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toBeTruthy();
     });
@@ -294,7 +277,6 @@ describe('App', () => {
 
     await user.click(screen.getByRole('tab', { name: '业绩报表' }));
 
-    // performance tab should still have 新客 as customer scope
     const perfScopeItems = screen.getAllByText('客户统计范围');
     expect(perfScopeItems[0].closest('.ant-form-item')).toHaveTextContent('新客');
   });

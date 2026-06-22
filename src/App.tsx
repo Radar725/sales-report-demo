@@ -49,7 +49,6 @@ const defaultFilters: SalesDashboardFilters = {
 const defaultFunnelFilters: FunnelFilters = {
   dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), today],
   comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
-  customerScope: 'currentNewCustomers',
   customerType: 'valid',
   departments: [],
   consultants: [],
@@ -172,7 +171,6 @@ export default function App() {
     }
     const currentRows = buildFunnelSummaryRows(
       filteredFunnelCustomers,
-      funnelFilters.dateRange,
       funnelPrimaryDimension,
     );
     if (!hasFunnelComparison || !funnelFilters.comparisonDateRange) {
@@ -180,7 +178,6 @@ export default function App() {
     }
     const comparisonRows = buildFunnelSummaryRows(
       comparisonFunnelCustomers,
-      funnelFilters.comparisonDateRange,
       funnelPrimaryDimension,
     );
     return attachFunnelComparison(
@@ -202,6 +199,7 @@ export default function App() {
   return (
     <main className="app-shell">
       <Tabs
+        destroyInactiveTabPane
         activeKey={activeReport}
         onChange={(key) => setActiveReport(key as 'performance' | 'funnel')}
         items={[
@@ -318,10 +316,6 @@ export default function App() {
                       funnelDimensions.find((d) => d.key === funnelPrimaryDimension) ?? funnelDimensions[0]
                     }
                     rows={funnelSummaryRows}
-                    filters={{
-                      customerScope: funnelFilters.customerScope,
-                      customerType: funnelFilters.customerType,
-                    }}
                     hasComparison={hasFunnelComparison}
                     onOpenBreakdown={setSelectedFunnelBreakdownRow}
                   />
@@ -330,17 +324,12 @@ export default function App() {
                 <FunnelBreakdownDrawer
                   open={selectedFunnelBreakdownRow !== null}
                   records={filteredFunnelCustomers}
-                  dateRange={funnelFilters.dateRange ?? ['', '']}
                   comparisonRecords={comparisonFunnelCustomers}
-                  comparisonDateRange={funnelFilters.comparisonDateRange}
+                  hasComparison={hasFunnelComparison}
                   primaryDimension={
                     funnelDimensions.find((d) => d.key === funnelPrimaryDimension) ?? funnelDimensions[0]
                   }
                   row={selectedFunnelBreakdownRow}
-                  filters={{
-                    customerScope: funnelFilters.customerScope,
-                    customerType: funnelFilters.customerType,
-                  }}
                   onClose={() => setSelectedFunnelBreakdownRow(null)}
                 />
               </>

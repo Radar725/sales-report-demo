@@ -15,15 +15,6 @@ type FunnelFilterBarProps = {
   onFiltersChange: (filters: FunnelFilters) => void;
 };
 
-const customerScopeOptions: Array<{
-  value: FunnelFilters['customerScope'];
-  label: string;
-}> = [
-  { value: 'all', label: '全部' },
-  { value: 'currentNewCustomers', label: '新客' },
-  { value: 'existingCustomers', label: '老客' },
-];
-
 const customerTypeOptions: Array<{
   value: FunnelFilters['customerType'];
   label: string;
@@ -62,7 +53,6 @@ const presets: NonNullable<
 const defaultFunnelFiltersReset: FunnelFilters = {
   dateRange: [dayjs().startOf('month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
   comparisonDateRange: getDefaultComparisonDateRange(dayjs()),
-  customerScope: 'currentNewCustomers',
   customerType: 'valid',
   departments: [],
   consultants: [],
@@ -105,7 +95,7 @@ export default function FunnelFilterBar({
 
   return (
     <Form layout="inline" className="filter-bar">
-      <Form.Item label="统计时间">
+      <Form.Item label="录单时间">
         <DatePicker.RangePicker
           allowClear={false}
           presets={presets}
@@ -144,19 +134,6 @@ export default function FunnelFilterBar({
                   : null,
             }));
           }}
-        />
-      </Form.Item>
-
-      <Form.Item label="客户统计范围">
-        <Select
-          value={localFilters.customerScope}
-          style={{ width: 160 }}
-          placeholder="请选择客户统计范围"
-          allowClear={false}
-          options={customerScopeOptions}
-          onChange={(customerScope) =>
-            setLocalFilters((prev) => ({ ...prev, customerScope }))
-          }
         />
       </Form.Item>
 
