@@ -17,7 +17,6 @@ export type FunnelDimensionKey =
 export type FunnelFilters = {
   dateRange: [string, string] | null;
   comparisonDateRange: [string, string] | null;
-  customerType: 'all' | 'valid' | 'invalid';
   departments: string[];
   consultants: string[];
   channelCategories: string[];
@@ -28,12 +27,14 @@ export type FunnelSummaryRow = {
   key: string;
   primaryDimensionValue: string;
   recordedCustomerCount: number;
+  validCustomerCount: number;
   addedWechatCustomerCount: number;
   dispatchedCustomerCount: number;
   invitedCustomerCount: number;
   visitedCustomerCount: number;
   convertedCustomerCount: number;
   repurchasedCustomerCount: number;
+  validCustomerRate: number | null;
   addedWechatRate: number | null;
   dispatchRate: number | null;
   invitationRate: number | null;
@@ -44,12 +45,14 @@ export type FunnelSummaryRow = {
 
 export type FunnelMetricKey =
   | 'recordedCustomerCount'
+  | 'validCustomerCount'
   | 'addedWechatCustomerCount'
   | 'dispatchedCustomerCount'
   | 'invitedCustomerCount'
   | 'visitedCustomerCount'
   | 'convertedCustomerCount'
   | 'repurchasedCustomerCount'
+  | 'validCustomerRate'
   | 'addedWechatRate'
   | 'dispatchRate'
   | 'invitationRate'
@@ -63,12 +66,14 @@ export type FunnelBreakdownRow = {
   key: string;
   breakdownDimensionValue: string;
   recordedCustomerCount: number;
+  validCustomerCount: number;
   addedWechatCustomerCount: number;
   dispatchedCustomerCount: number;
   invitedCustomerCount: number;
   visitedCustomerCount: number;
   convertedCustomerCount: number;
   repurchasedCustomerCount: number;
+  validCustomerRate: number | null;
   addedWechatRate: number | null;
   dispatchRate: number | null;
   invitationRate: number | null;
@@ -136,27 +141,31 @@ function countAll(customers: FunnelCustomerRecord[]) {
 
 function calculateFunnelMetrics(customers: FunnelCustomerRecord[]) {
   const recordedCustomerCount = countAll(customers);
-  const addedWechatCustomerCount = countReached(customers, 'wechatAdded');
-  const dispatchedCustomerCount = countReached(customers, 'dispatched');
-  const invitedCustomerCount = countReached(customers, 'invited');
-  const visitedCustomerCount = countReached(customers, 'visited');
-  const convertedCustomerCount = countReached(customers, 'firstConverted');
-  const repurchasedCustomerCount = countReached(customers, 'repurchased');
+  const validCustomers = customers.filter((customer) => customer.customerType === 'valid');
+  const validCustomerCount = countAll(validCustomers);
+  const addedWechatCustomerCount = countReached(validCustomers, 'wechatAdded');
+  const dispatchedCustomerCount = countReached(validCustomers, 'dispatched');
+  const invitedCustomerCount = countReached(validCustomers, 'invited');
+  const visitedCustomerCount = countReached(validCustomers, 'visited');
+  const convertedCustomerCount = countReached(validCustomers, 'firstConverted');
+  const repurchasedCustomerCount = countReached(validCustomers, 'repurchased');
 
   return {
     recordedCustomerCount,
+    validCustomerCount,
     addedWechatCustomerCount,
     dispatchedCustomerCount,
     invitedCustomerCount,
     visitedCustomerCount,
     convertedCustomerCount,
     repurchasedCustomerCount,
-    addedWechatRate: ratio(addedWechatCustomerCount, recordedCustomerCount),
-    dispatchRate: ratio(dispatchedCustomerCount, recordedCustomerCount),
-    invitationRate: ratio(invitedCustomerCount, recordedCustomerCount),
-    visitRate: ratio(visitedCustomerCount, recordedCustomerCount),
-    conversionRate: ratio(convertedCustomerCount, recordedCustomerCount),
-    repurchaseRate: ratio(repurchasedCustomerCount, recordedCustomerCount),
+    validCustomerRate: ratio(validCustomerCount, recordedCustomerCount),
+    addedWechatRate: ratio(addedWechatCustomerCount, validCustomerCount),
+    dispatchRate: ratio(dispatchedCustomerCount, validCustomerCount),
+    invitationRate: ratio(invitedCustomerCount, validCustomerCount),
+    visitRate: ratio(visitedCustomerCount, validCustomerCount),
+    conversionRate: ratio(convertedCustomerCount, validCustomerCount),
+    repurchaseRate: ratio(repurchasedCustomerCount, validCustomerCount),
   };
 }
 
@@ -172,10 +181,6 @@ export function filterFunnelCustomers(
       ) {
         return false;
       }
-    }
-
-    if (filters.customerType !== 'all' && record.customerType !== filters.customerType) {
-      return false;
     }
 
     if (
@@ -293,12 +298,14 @@ export function buildFunnelBreakdownRows(
 
 const FUNNEL_METRIC_KEYS: FunnelMetricKey[] = [
   'recordedCustomerCount',
+  'validCustomerCount',
   'addedWechatCustomerCount',
   'dispatchedCustomerCount',
   'invitedCustomerCount',
   'visitedCustomerCount',
   'convertedCustomerCount',
   'repurchasedCustomerCount',
+  'validCustomerRate',
   'addedWechatRate',
   'dispatchRate',
   'invitationRate',

@@ -17,7 +17,6 @@ import {
 const filters: FunnelFilters = {
   dateRange: ['2026-06-01', '2026-06-30'],
   comparisonDateRange: null,
-  customerType: 'valid',
   departments: [],
   consultants: [],
   channelCategories: [],
@@ -58,6 +57,8 @@ describe('funnel analytics', () => {
     );
     expect(row).toMatchObject({
       recordedCustomerCount: 7,
+      validCustomerCount: 7,
+      validCustomerRate: 1,
       addedWechatCustomerCount: 6,
       dispatchedCustomerCount: 5,
       invitedCustomerCount: 4,
@@ -79,6 +80,51 @@ describe('funnel analytics', () => {
   it('returns null for every ratio with a zero denominator', () => {
     const [row] = buildFunnelSummaryRows([], 'total');
     expect(row).toMatchObject({
+      validCustomerRate: null,
+      addedWechatRate: null,
+      dispatchRate: null,
+      invitationRate: null,
+      visitRate: null,
+      conversionRate: null,
+      repurchaseRate: null,
+    });
+  });
+
+  it('keeps all recorded customers but calculates stages from valid customers only', () => {
+    const validConverted = makeCustomer('valid-converted', 'firstConverted');
+    const invalidConverted = {
+      ...makeCustomer('invalid-converted', 'repurchased'),
+      customerType: 'invalid' as const,
+    };
+
+    const [row] = buildFunnelSummaryRows([validConverted, invalidConverted], 'total');
+
+    expect(row).toMatchObject({
+      recordedCustomerCount: 2,
+      validCustomerCount: 1,
+      validCustomerRate: 1 / 2,
+      addedWechatCustomerCount: 1,
+      convertedCustomerCount: 1,
+      repurchasedCustomerCount: 0,
+      addedWechatRate: 1,
+      conversionRate: 1,
+      repurchaseRate: 0,
+    });
+  });
+
+  it('returns null for the valid-customer rate and every stage rate without valid customers', () => {
+    const invalidOnly = {
+      ...makeCustomer('invalid-only', 'repurchased'),
+      customerType: 'invalid' as const,
+    };
+    const [row] = buildFunnelSummaryRows([invalidOnly], 'total');
+
+    expect(row).toMatchObject({
+      recordedCustomerCount: 1,
+      validCustomerCount: 0,
+      validCustomerRate: 0,
+      addedWechatCustomerCount: 0,
+      repurchasedCustomerCount: 0,
       addedWechatRate: null,
       dispatchRate: null,
       invitationRate: null,
@@ -104,7 +150,7 @@ describe('funnel analytics', () => {
       'consultant',
     );
     expect(rows.find((row) => row.primaryDimensionValue === '张敏')).toMatchObject({
-      recordedCustomerCount: 3,
+      recordedCustomerCount: 4,
       addedWechatCustomerCount: 3,
       invitedCustomerCount: 3,
       repurchasedCustomerCount: 1,
@@ -200,11 +246,13 @@ describe('funnel comparison', () => {
     currentRows[0] = {
       ...currentRows[0],
       recordedCustomerCount: 3,
+      validCustomerRate: 0.5,
       conversionRate: 0.5,
     };
     comparisonRows[0] = {
       ...comparisonRows[0],
       recordedCustomerCount: 2,
+      validCustomerRate: 0.4,
       conversionRate: 0.4,
     };
 
@@ -217,6 +265,7 @@ describe('funnel comparison', () => {
     );
 
     expect(rows[0].comparison?.recordedCustomerCount).toBe(0.5);
+    expect(rows[0].comparison?.validCustomerRate).toBeCloseTo(0.25);
     expect(rows[0].comparison?.conversionRate).toBeCloseTo(0.25);
   });
 
