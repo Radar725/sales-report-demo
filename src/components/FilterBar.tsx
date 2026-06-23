@@ -91,7 +91,7 @@ const defaultFiltersReset: SalesDashboardFilters = {
   channels: [],
   projectCategories: [],
   projects: [],
-  customerScope: 'currentNewCustomers',
+  customerScope: 'all',
   customerPools: [],
   cities: [],
   institutions: [],
@@ -266,7 +266,7 @@ export default function FilterBar({
 
       {expanded && (
         <>
-          <Form.Item label="城市&机构">
+          <Form.Item label="机构">
             <TreeSelect
               treeData={treeData.cityTree}
               treeCheckable

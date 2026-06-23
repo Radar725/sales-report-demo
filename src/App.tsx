@@ -45,7 +45,7 @@ const defaultFilters: SalesDashboardFilters = {
   channels: [],
   projectCategories: [],
   projects: [],
-  customerScope: 'currentNewCustomers',
+  customerScope: 'all',
   customerPools: [],
   cities: [],
   institutions: [],
@@ -58,6 +58,7 @@ const defaultFunnelFilters: FunnelFilters = {
   consultants: [],
   channelCategories: [],
   channels: [],
+  customerPools: [],
 };
 
 const funnelDimensions = [

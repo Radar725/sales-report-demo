@@ -21,6 +21,7 @@ export type FunnelFilters = {
   consultants: string[];
   channelCategories: string[];
   channels: string[];
+  customerPools: string[];
 };
 
 export type FunnelSummaryRow = {
@@ -205,6 +206,13 @@ export function filterFunnelCustomers(
     if (
       filters.channels.length > 0 &&
       !filters.channels.includes(record.channel)
+    ) {
+      return false;
+    }
+
+    if (
+      filters.customerPools.length > 0 &&
+      !filters.customerPools.includes(record.customerPool)
     ) {
       return false;
     }
@@ -419,6 +427,16 @@ export function getFunnelBreakdownDimensions(
   return funnelDimensions.filter((dimension) =>
     canBreakDown(primaryDimension, dimension),
   );
+}
+
+function uniqueSorted(values: string[]) {
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right, 'zh-Hans-CN'));
+}
+
+export function getFunnelFilterOptions(records: FunnelCustomerRecord[]) {
+  return {
+    customerPools: uniqueSorted(records.map((record) => record.customerPool)),
+  };
 }
 
 export function buildFunnelTreeData(

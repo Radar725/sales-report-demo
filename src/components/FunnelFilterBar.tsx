@@ -1,10 +1,11 @@
-import { Button, DatePicker, Form, Space, TreeSelect } from 'antd';
+import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import type { FunnelCustomerRecord } from '../data/mockFunnelCustomers';
 import { getDefaultComparisonDateRange } from '../domain/comparison';
 import {
   buildFunnelTreeData,
+  getFunnelFilterOptions,
   type FunnelFilters,
   type FunnelTreeDataNode,
 } from '../domain/funnel';
@@ -14,6 +15,10 @@ type FunnelFilterBarProps = {
   records: FunnelCustomerRecord[];
   onFiltersChange: (filters: FunnelFilters) => void;
 };
+
+function toSelectOptions(values: string[]) {
+  return values.map((value) => ({ value, label: value }));
+}
 
 
 const presets: NonNullable<
@@ -49,6 +54,7 @@ const defaultFunnelFiltersReset: FunnelFilters = {
   consultants: [],
   channelCategories: [],
   channels: [],
+  customerPools: [],
 };
 
 export default function FunnelFilterBar({
@@ -62,6 +68,10 @@ export default function FunnelFilterBar({
   }));
 
   const treeData = useMemo(() => buildFunnelTreeData(records), [records]);
+  const customerPoolOptions = useMemo(
+    () => getFunnelFilterOptions(records).customerPools,
+    [records],
+  );
 
   useEffect(() => {
     setLocalFilters({
@@ -177,6 +187,20 @@ export default function FunnelFilterBar({
               channels: children,
             }));
           }}
+        />
+      </Form.Item>
+
+      <Form.Item label="客户池">
+        <Select
+          mode="multiple"
+          value={localFilters.customerPools}
+          placeholder="请选择客户池"
+          maxTagCount="responsive"
+          style={{ width: 180 }}
+          options={toSelectOptions(customerPoolOptions)}
+          onChange={(customerPools) =>
+            setLocalFilters((prev) => ({ ...prev, customerPools }))
+          }
         />
       </Form.Item>
 

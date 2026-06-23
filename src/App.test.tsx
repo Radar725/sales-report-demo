@@ -53,23 +53,22 @@ describe('App', () => {
     expect(screen.getByRole('tab', { name: '转化漏斗报表' })).toBeInTheDocument();
   });
 
-  it('defaults customer scope to new customers', () => {
+  it('defaults customer scope to all', () => {
     render(<App />);
-    expect(screen.getByText('客户统计范围').closest('.ant-form-item')).toHaveTextContent('新客');
+    expect(screen.getByText('客户统计范围').closest('.ant-form-item')).toHaveTextContent('全部');
   });
 
-  it('always shows the seven new-customer metric columns by default', () => {
+  it('shows default metric columns for all customer scope', () => {
     render(<App />);
 
     for (const column of [
-      '新客上报业绩', '新客确认业绩', '新客业绩确认率', '新客成交单量', '新客成交客户数', '新客客单价',
-      '新客业绩占比', '新客成交单量占比', '新客成交客户占比',
-      '新客业绩贡献', '新客成交单量贡献', '新客成交客户贡献',
+      '上报业绩', '确认业绩', '业绩确认率', '成交单量', '成交客户数', '客单价',
+      '业绩贡献', '成交单量贡献', '成交客户贡献',
     ]) {
       expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
     }
-    expect(screen.queryByRole('columnheader', { name: '新客数' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: '新客成交率' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '业绩占比' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '新客上报业绩' })).not.toBeInTheDocument();
   });
 
   it('uses combined prefixes in the main table and hides share columns for all scope', async () => {
@@ -162,7 +161,7 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: '展开 ▼' }));
 
-    expect(screen.getByText('城市&机构')).toBeInTheDocument();
+    expect(screen.getByText('机构')).toBeInTheDocument();
     expect(screen.getByText('客户池')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '收起 ▲' })).toBeInTheDocument();
   });
@@ -280,7 +279,7 @@ describe('App', () => {
     await user.click(screen.getByRole('tab', { name: '业绩报表' }));
 
     const perfScopeItems = screen.getAllByText('客户统计范围');
-    expect(perfScopeItems[0].closest('.ant-form-item')).toHaveTextContent('新客');
+    expect(perfScopeItems[0].closest('.ant-form-item')).toHaveTextContent('全部');
   });
 
   it('shows the default comparison date range on load', () => {
@@ -418,6 +417,63 @@ describe('App', () => {
     await applyFilters(user);
 
     expect(screen.queryByRole('columnheader', { name: '新客复购客户历史占比' })).toBeNull();
+  });
+
+  it('restores customer scope to all after reset', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await selectOption(user, '客户统计范围', '新客');
+    await applyFilters(user);
+    await user.click(within(document.querySelector('.filter-bar')!).getByRole('button', { name: '重 置' }));
+
+    expect(screen.getByText('客户统计范围').closest('.ant-form-item')).toHaveTextContent('全部');
+  });
+
+  it('shows funnel customer pool filter with options from funnel data', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openFunnelReport(user);
+
+    expect(screen.getAllByText('客户池').length).toBeGreaterThanOrEqual(1);
+    const funnelFilterBar = screen.getAllByText('录单时间')[0].closest('.filter-bar')!;
+    const customerPoolItem = within(funnelFilterBar as HTMLElement).getByText('客户池').closest('.ant-form-item')!;
+    fireEvent.mouseDown(customerPoolItem.querySelector('.ant-select-selector')!);
+    await waitFor(() => {
+      expect(document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toBeTruthy();
+    });
+    const visibleDropdown = document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)') as HTMLElement;
+    expect(within(visibleDropdown).getByRole('option', { name: '高意向池' })).toBeInTheDocument();
+    expect(within(visibleDropdown).getByRole('option', { name: '培育池' })).toBeInTheDocument();
+    expect(within(visibleDropdown).queryByRole('option', { name: '高客单价池' })).not.toBeInTheDocument();
+  });
+
+  it('filters funnel summary by selected customer pools', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await openFunnelReport(user);
+
+    const funnelFilterBar = screen.getAllByText('录单时间')[0].closest('.filter-bar')!;
+    const statsTime = within(funnelFilterBar as HTMLElement).getByText('录单时间').closest('.ant-form-item')!;
+    const inputs = statsTime!.querySelectorAll<HTMLInputElement>('.ant-picker-input input');
+    await user.clear(inputs[0]);
+    await user.type(inputs[0], '2026-06-01');
+    await user.clear(inputs[1]);
+    await user.type(inputs[1], '2026-06-30');
+
+    const customerPoolItem = within(funnelFilterBar as HTMLElement).getByText('客户池').closest('.ant-form-item')!;
+    fireEvent.mouseDown(customerPoolItem.querySelector('.ant-select-selector')!);
+    await waitFor(() => {
+      expect(document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')).toBeTruthy();
+    });
+    const visibleDropdown = document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)') as HTMLElement;
+    await user.click(within(visibleDropdown).getByTitle('高意向池'));
+    await user.keyboard('{Escape}');
+    const queryBtns = screen.getAllByRole('button', { name: '查 询' });
+    await user.click(queryBtns[queryBtns.length - 1]);
+
+    const zhangMinRow = screen.getByRole('cell', { name: '张敏' }).closest('tr')!;
+    expect(zhangMinRow.textContent).toMatch(/^张敏3/);
   });
 
 });

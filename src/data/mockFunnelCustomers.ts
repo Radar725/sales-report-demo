@@ -18,6 +18,7 @@ export type FunnelCustomerRecord = {
   consultant: string;
   channelCategory: string;
   channel: string;
+  customerPool: string;
 };
 
 export const mockFunnelCustomers: FunnelCustomerRecord[] = [
@@ -30,6 +31,7 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
+    customerPool: '高意向池',
   },
   {
     id: 'C002',
@@ -40,6 +42,7 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
+    customerPool: '高意向池',
   },
   {
     id: 'C003',
@@ -50,6 +53,7 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '张敏',
     channelCategory: '私域运营',
     channel: '私域',
+    customerPool: '普通池',
   },
   {
     id: 'C004',
@@ -60,6 +64,7 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '李然',
     channelCategory: '线上投放',
     channel: '信息流',
+    customerPool: '培育池',
   },
   {
     id: 'C005',
@@ -70,6 +75,7 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '李然',
     channelCategory: '口碑推荐',
     channel: '转介绍',
+    customerPool: '普通池',
   },
   {
     id: 'C006',
@@ -80,6 +86,7 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '李然',
     channelCategory: '私域运营',
     channel: '私域',
+    customerPool: '培育池',
   },
   {
     id: 'C007',
@@ -90,6 +97,7 @@ export const mockFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '张敏',
     channelCategory: '私域运营',
     channel: '私域',
+    customerPool: '高意向池',
   },
 ];
 
@@ -104,6 +112,7 @@ export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
+    customerPool: '高意向池',
   },
   {
     id: 'C009',
@@ -114,6 +123,7 @@ export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
+    customerPool: '高意向池',
   },
   {
     id: 'C010',
@@ -124,6 +134,7 @@ export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '张敏',
     channelCategory: '私域运营',
     channel: '私域',
+    customerPool: '普通池',
   },
   {
     id: 'C011',
@@ -134,6 +145,7 @@ export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '李然',
     channelCategory: '线上投放',
     channel: '信息流',
+    customerPool: '培育池',
   },
   {
     id: 'C012',
@@ -144,6 +156,7 @@ export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '李然',
     channelCategory: '私域运营',
     channel: '私域',
+    customerPool: '培育池',
   },
   {
     id: 'C013',
@@ -154,6 +167,7 @@ export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '李然',
     channelCategory: '口碑推荐',
     channel: '转介绍',
+    customerPool: '普通池',
   },
   {
     id: 'C014',
@@ -164,6 +178,7 @@ export const mockComparisonFunnelCustomers: FunnelCustomerRecord[] = [
     consultant: '李然',
     channelCategory: '演示渠道',
     channel: '演示渠道 A',
+    customerPool: '演示池',
   },
 ];
 

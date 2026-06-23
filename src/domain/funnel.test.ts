@@ -11,6 +11,7 @@ import {
   buildFunnelTreeData,
   filterFunnelCustomers,
   getFunnelBreakdownDimensions,
+  getFunnelFilterOptions,
   type FunnelFilters,
 } from './funnel';
 
@@ -21,12 +22,14 @@ const filters: FunnelFilters = {
   consultants: [],
   channelCategories: [],
   channels: [],
+  customerPools: [],
 };
 
 function makeCustomer(
   id: string,
   status: FunnelCustomerStatus,
   createdAt = '2026-06-01',
+  customerPool = '高意向池',
 ): FunnelCustomerRecord {
   return {
     id,
@@ -37,6 +40,7 @@ function makeCustomer(
     consultant: '张敏',
     channelCategory: '线上投放',
     channel: '信息流',
+    customerPool,
   };
 }
 
@@ -228,6 +232,43 @@ describe('funnel analytics', () => {
   it('allows cross-group breakdown', () => {
     const dims = getFunnelBreakdownDimensions('department');
     expect(dims.find((d) => d.key === 'channel')).toBeDefined();
+  });
+
+  it('filters customers by selected customer pools', () => {
+    const rows = filterFunnelCustomers(mockFunnelCustomers, {
+      ...filters,
+      customerPools: ['高意向池'],
+    });
+    expect(rows.map((row) => row.id)).toEqual(['C001', 'C002', 'C007']);
+  });
+
+  it('returns all customers when no customer pool is selected', () => {
+    const filtered = filterFunnelCustomers(mockFunnelCustomers, filters);
+    expect(filtered.length).toBe(5);
+  });
+
+  it('derives customer pool options from funnel records', () => {
+    expect(getFunnelFilterOptions(mockFunnelCustomers).customerPools).toEqual([
+      '高意向池',
+      '培育池',
+      '普通池',
+    ]);
+  });
+
+  it('applies customer pool filter in breakdown rows', () => {
+    const filtered = filterFunnelCustomers(mockFunnelCustomers, {
+      ...filters,
+      customerPools: ['高意向池'],
+    });
+    const rows = buildFunnelBreakdownRows(filtered, {
+      primaryDimension: 'department',
+      primaryDimensionValue: '华东一部',
+      breakdownDimension: 'consultant',
+    });
+    expect(rows[0]).toMatchObject({
+      breakdownDimensionValue: '张敏',
+      recordedCustomerCount: 3,
+    });
   });
 });
 
