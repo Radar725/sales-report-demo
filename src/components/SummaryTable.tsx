@@ -62,6 +62,7 @@ export default function SummaryTable({
       pagination={false}
       bordered
       scroll={{ x: 1112 }}
+      showSorterTooltip={{ target: 'sorter-icon' }}
     />
   );
 }

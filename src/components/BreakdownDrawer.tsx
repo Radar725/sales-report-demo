@@ -135,6 +135,7 @@ export default function BreakdownDrawer({
                       pagination={false}
                       bordered
                       scroll={{ x: 1060 }}
+                      showSorterTooltip={{ target: 'sorter-icon' }}
                     />
                   </Space>
                 ),

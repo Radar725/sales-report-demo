@@ -1,4 +1,5 @@
-import { Button, DatePicker, Form, Select, Space, TreeSelect } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { Button, DatePicker, Form, Select, Space, Tooltip, TreeSelect } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import type { DealRecord } from '../data/mockDeals';
@@ -31,6 +32,28 @@ const dealTypeOptions: Array<{ value: string; label: string }> = [
 
 function toSelectOptions(values: string[]) {
   return values.map((value) => ({ value, label: value }));
+}
+
+const customerScopeTooltip =
+  '按客户创建时间划分统计范围：新客为统计期内创建，老客为统计期开始前创建，全部不限制。该筛选不等同于首次成交，可与新诊、复购组合使用。';
+
+const dealTypeTooltip =
+  '按成交记录类型筛选：新诊为新诊成交，复购为复购成交，全部会同时统计两类成交。可与客户统计范围组合使用。';
+
+function FilterLabelWithInfo({ label, tooltip }: { label: string; tooltip: string }) {
+  return (
+    <span className="filter-label-with-info">
+      {label}{' '}
+      <Tooltip title={tooltip}>
+        <InfoCircleOutlined
+          className="filter-label-info-icon"
+          tabIndex={0}
+          role="img"
+          aria-label={`${label}说明`}
+        />
+      </Tooltip>
+    </span>
+  );
 }
 
 const presets: NonNullable<
@@ -152,7 +175,7 @@ export default function FilterBar({
           }}
         />
       </Form.Item>
-      <Form.Item label="客户统计范围">
+      <Form.Item label={<FilterLabelWithInfo label="客户统计范围" tooltip={customerScopeTooltip} />}>
         <Select
           value={localFilters.customerScope}
           style={{ width: 160 }}
@@ -163,7 +186,7 @@ export default function FilterBar({
           }
         />
       </Form.Item>
-      <Form.Item label="成交类型">
+      <Form.Item label={<FilterLabelWithInfo label="成交类型" tooltip={dealTypeTooltip} />}>
         <Select
           value={localFilters.dealType}
           style={{ width: 140 }}

@@ -82,6 +82,7 @@ export default function FunnelBreakdownDrawer({
                     pagination={false}
                     bordered
                     scroll={{ x: 1500 }}
+                    showSorterTooltip={{ target: 'sorter-icon' }}
                   />
                 </Space>
               ),

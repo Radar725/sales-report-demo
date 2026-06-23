@@ -1,6 +1,8 @@
+import '../test/spyAntdTable';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { expectReportTablesUseSorterIconTooltip, tableRenderSpy } from '../test/spyAntdTable';
 import { FunnelTable } from './FunnelTable';
 
 const departmentRow = {
@@ -50,4 +52,23 @@ it('disables breakdown for total rows', () => {
     />,
   );
   expect(screen.getByRole('button', { name: '维度拆解' })).toBeDisabled();
+});
+
+describe('FunnelTable sorter tooltip', () => {
+  beforeEach(() => {
+    tableRenderSpy.mockClear();
+  });
+
+  it('anchors sort instructions to the sorter icon', () => {
+    render(
+      <FunnelTable
+        primaryDimension={{ key: 'department', label: '部门' }}
+        rows={[departmentRow]}
+        hasComparison={false}
+        onOpenBreakdown={vi.fn()}
+      />,
+    );
+
+    expectReportTablesUseSorterIconTooltip();
+  });
 });

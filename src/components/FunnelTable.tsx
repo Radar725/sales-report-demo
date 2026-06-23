@@ -52,6 +52,7 @@ export function FunnelTable({
       pagination={false}
       bordered
       scroll={{ x: 1800 }}
+      showSorterTooltip={{ target: 'sorter-icon' }}
     />
   );
 }
