@@ -184,7 +184,7 @@ describe('sales analytics aggregation', () => {
   });
 
   it('builds one total row and returns every record in its detail scope', () => {
-    const rows = buildReportSummaryRows(mockDeals, [], 'total');
+    const rows = buildReportSummaryRows(mockDeals, [], [], 'total');
     const records = getDetailRecords(mockDeals, {
       primaryDimension: 'total',
       primaryDimensionValue: '汇总',
@@ -200,27 +200,49 @@ describe('sales analytics aggregation', () => {
     expect(records.map((record) => record.id)).toEqual(mockDeals.map((record) => record.id));
   });
 
-  it('returns 100 percent contribution rates when current and baseline records match', () => {
-    const [row] = buildReportSummaryRows(mockDeals, [], 'total');
+  it('returns 100 percent share and contribution rates for a single total row', () => {
+    const [row] = buildReportSummaryRows(mockDeals, mockDeals, [], 'total');
 
     expect(row).toMatchObject({
       reportedAmountRate: 1,
       dealCountRate: 1,
       customerCountRate: 1,
+      reportedAmountContributionRate: 1,
+      dealCountContributionRate: 1,
+      customerCountContributionRate: 1,
     });
+  });
+
+  it('calculates summary ratios against the same-dimension baseline row', () => {
+    const currentRecords = mockDeals.filter(
+      (record) => record.consultant === '张敏' && record.dealType === '新诊',
+    );
+    const rows = buildReportSummaryRows(currentRecords, mockDeals, [], 'consultant');
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        primaryDimensionValue: '张敏',
+        reportedAmount: 1250000,
+        dealCount: 3,
+        customerCount: 3,
+        reportedAmountRate: 1250000 / 1800000,
+        dealCountRate: 3 / 5,
+        customerCountRate: 3 / 4,
+      }),
+    ]);
   });
 
   it('calculates summary contributions against all current filtered records', () => {
     const currentRecords = mockDeals.filter((record) => record.dealType === '新诊');
-    const rows = buildReportSummaryRows(currentRecords, [], 'consultant');
+    const rows = buildReportSummaryRows(currentRecords, mockDeals, [], 'consultant');
     const zhangMin = rows.find((row) => row.primaryDimensionValue === '张敏')!;
 
     expect(zhangMin).toMatchObject({
-      reportedAmountRate:
+      reportedAmountContributionRate:
         zhangMin.reportedAmount /
         currentRecords.reduce((sum, record) => sum + record.reportedAmount, 0),
-      dealCountRate: zhangMin.dealCount / currentRecords.length,
-      customerCountRate:
+      dealCountContributionRate: zhangMin.dealCount / currentRecords.length,
+      customerCountContributionRate:
         zhangMin.customerCount /
         new Set(currentRecords.map((record) => record.customerId)).size,
     });
@@ -261,6 +283,9 @@ describe('sales analytics aggregation', () => {
         reportedAmountRate: 1,
         dealCountRate: 1,
         customerCountRate: 1,
+        reportedAmountContributionRate: 1,
+        dealCountContributionRate: 1,
+        customerCountContributionRate: 1,
         ...baseMetrics,
         confirmedAmount: 10000,
         confirmedAmountRate: 0.6875,
@@ -281,6 +306,9 @@ describe('sales analytics aggregation', () => {
         reportedAmountRate: 1,
         dealCountRate: 1,
         customerCountRate: null,
+        reportedAmountContributionRate: 1,
+        dealCountContributionRate: 1,
+        customerCountContributionRate: null,
         ...baseMetrics,
         confirmedAmount: 8000,
         confirmedAmountRate: 0.625,
@@ -338,7 +366,7 @@ describe('sales analytics aggregation', () => {
     };
     const current = filterDealRecords(demoDealRecords, filters);
     const history = filterHistoricalRepurchaseRecords(demoDealRecords, filters);
-    const [row] = buildReportSummaryRows(current, history, 'consultant');
+    const [row] = buildReportSummaryRows(current, mockDeals, history, 'consultant');
 
     expect(row).toMatchObject({
       repurchaseCustomerTotalRate:
@@ -369,7 +397,7 @@ describe('sales analytics aggregation', () => {
     };
     const current = filterDealRecords(demoDealRecords, filters);
     const history = filterHistoricalRepurchaseRecords(demoDealRecords, filters);
-    const rows = buildReportBreakdownRows(current, history, {
+    const rows = buildReportBreakdownRows(current, mockDeals, history, {
       primaryDimension: 'consultant',
       primaryDimensionValue: '张敏',
       breakdownDimension: 'channel',
@@ -407,7 +435,7 @@ describe('sales analytics aggregation', () => {
       institutions: [],
     };
     const current = filterDealRecords(demoDealRecords, filters);
-    const [row] = buildReportSummaryRows(current, [], 'consultant');
+    const [row] = buildReportSummaryRows(current, mockDeals, [], 'consultant');
 
     expect(row).toMatchObject({
       repurchaseCustomerTotalRate: null,
@@ -420,21 +448,41 @@ describe('sales analytics aggregation', () => {
     const currentRecords = mockDeals.filter(
       (record) => record.consultant === '张敏' && record.dealType === '新诊',
     );
-    const rows = buildReportBreakdownRows(currentRecords, [], {
+    const rows = buildReportBreakdownRows(currentRecords, mockDeals, [], {
       primaryDimension: 'consultant',
       primaryDimensionValue: '张敏',
       breakdownDimension: 'channel',
     });
-    const channel = rows[0];
+    const channel = rows.find((row) => row.breakdownDimensionValue === '信息流')!;
 
     expect(channel).toMatchObject({
-      reportedAmountRate:
+      reportedAmountContributionRate:
         channel.reportedAmount /
         currentRecords.reduce((sum, record) => sum + record.reportedAmount, 0),
-      dealCountRate: channel.dealCount / currentRecords.length,
-      customerCountRate:
+      dealCountContributionRate: channel.dealCount / currentRecords.length,
+      customerCountContributionRate:
         channel.customerCount /
         new Set(currentRecords.map((record) => record.customerId)).size,
     });
+  });
+
+  it('calculates breakdown ratios against the same primary and breakdown dimensions', () => {
+    const currentRecords = mockDeals.filter(
+      (record) => record.consultant === '张敏' && record.dealType === '新诊',
+    );
+    const rows = buildReportBreakdownRows(currentRecords, mockDeals, [], {
+      primaryDimension: 'consultant',
+      primaryDimensionValue: '张敏',
+      breakdownDimension: 'channel',
+    });
+
+    expect(rows.find((row) => row.breakdownDimensionValue === '信息流')).toEqual(
+      expect.objectContaining({
+        reportedAmount: 900000,
+        reportedAmountRate: 1,
+        dealCountRate: 1,
+        customerCountRate: 1,
+      }),
+    );
   });
 });

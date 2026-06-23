@@ -14,6 +14,9 @@ const baseReportRecord = {
   reportedAmountRate: 1,
   dealCountRate: 1,
   customerCountRate: 1,
+  reportedAmountContributionRate: 0.4,
+  dealCountContributionRate: 0.4,
+  customerCountContributionRate: 0.4,
   repurchaseCustomerTotalRate: null,
   repurchaseDealCountTotalRate: null,
   repurchaseAmountTotalRate: null,
@@ -30,9 +33,9 @@ describe('report metric columns', () => {
       'dealCount',
       'customerCount',
       'averageDealAmount',
-      'reportedAmountRate',
-      'dealCountRate',
-      'customerCountRate',
+      'reportedAmountContributionRate',
+      'dealCountContributionRate',
+      'customerCountContributionRate',
     ]);
     expect(columns.map((column) => column.width)).toEqual([
       REPORT_METRIC_WIDTHS.amount,
@@ -54,7 +57,7 @@ describe('report metric columns', () => {
     ]);
   });
 
-  it('includes contribution metrics when either filter is narrowed', () => {
+  it('includes share and contribution metrics when either filter is narrowed', () => {
     const columns = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'all' });
 
     expect(columns.map((column) => column.key)).toEqual([
@@ -67,6 +70,9 @@ describe('report metric columns', () => {
       'reportedAmountRate',
       'dealCountRate',
       'customerCountRate',
+      'reportedAmountContributionRate',
+      'dealCountContributionRate',
+      'customerCountContributionRate',
     ]);
   });
 
@@ -106,6 +112,7 @@ describe('report metric columns', () => {
     expect(titles).toEqual([
       '新客新诊上报业绩', '新客新诊确认业绩', '新客新诊业绩确认率',
       '新客新诊成交单量', '新客新诊成交客户数', '新客新诊客单价',
+      '新客新诊业绩占比', '新客新诊成交单量占比', '新客新诊成交客户占比',
       '新客新诊业绩贡献', '新客新诊成交单量贡献', '新客新诊成交客户贡献',
     ]);
     expect(titles).toContain('新客新诊确认业绩');
@@ -114,11 +121,11 @@ describe('report metric columns', () => {
 
   it('renders contribution comparison deltas when hasComparison is true', () => {
     const column = buildReportMetricColumns(allFilters, true)
-      .find((item) => item.key === 'reportedAmountRate')!;
+      .find((item) => item.key === 'reportedAmountContributionRate')!;
     render(<>{column.render?.(0.4, {
       ...baseReportRecord,
-      reportedAmountRate: 0.4,
-      comparison: { reportedAmountRate: 0.25 },
+      reportedAmountContributionRate: 0.4,
+      comparison: { reportedAmountContributionRate: 0.25 },
     }, 0)}</>);
     expect(screen.getByText('40.0%')).toBeInTheDocument();
     expect(screen.getByText('↑ 25.0%')).toBeInTheDocument();

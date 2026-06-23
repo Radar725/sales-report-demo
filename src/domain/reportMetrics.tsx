@@ -15,6 +15,9 @@ export type ReportMetricValue = Pick<
   reportedAmountRate: number | null;
   dealCountRate: number | null;
   customerCountRate: number | null;
+  reportedAmountContributionRate: number | null;
+  dealCountContributionRate: number | null;
+  customerCountContributionRate: number | null;
   repurchaseCustomerTotalRate: number | null;
   repurchaseDealCountTotalRate: number | null;
   repurchaseAmountTotalRate: number | null;
@@ -105,10 +108,16 @@ const baseMetrics: ReportMetricDefinition[] = [
   { key: 'averageDealAmount', label: '客单价', format: 'amount', width: REPORT_METRIC_WIDTHS.amount },
 ];
 
+const shareMetrics: ReportMetricDefinition[] = [
+  { key: 'reportedAmountRate', label: '业绩占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+  { key: 'dealCountRate', label: '成交单量占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+  { key: 'customerCountRate', label: '成交客户占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+];
+
 const contributionMetrics: ReportMetricDefinition[] = [
-  { key: 'reportedAmountRate', label: '业绩贡献', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
-  { key: 'dealCountRate', label: '成交单量贡献', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
-  { key: 'customerCountRate', label: '成交客户贡献', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+  { key: 'reportedAmountContributionRate', label: '业绩贡献', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+  { key: 'dealCountContributionRate', label: '成交单量贡献', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
+  { key: 'customerCountContributionRate', label: '成交客户贡献', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
 ];
 
 const repurchaseTotalContributionMetrics: ReportMetricDefinition[] = [
@@ -117,12 +126,17 @@ const repurchaseTotalContributionMetrics: ReportMetricDefinition[] = [
   { key: 'repurchaseAmountTotalRate', label: '复购业绩历史占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true },
 ];
 
+function shouldShowShareRates(filters: ReportColumnFilters) {
+  return !(filters.customerScope === 'all' && filters.dealType === 'all');
+}
+
 export function buildReportMetricColumns<T extends ReportMetricValue & ComparableRecord>(
   filters: ReportColumnFilters,
   hasComparison = false,
 ): ColumnsType<T> {
   const metrics = [
     ...baseMetrics,
+    ...(shouldShowShareRates(filters) ? shareMetrics : []),
     ...contributionMetrics,
     ...(filters.dealType === 'repurchase' ? repurchaseTotalContributionMetrics : []),
   ];

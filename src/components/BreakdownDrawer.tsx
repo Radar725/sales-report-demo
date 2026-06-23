@@ -16,9 +16,11 @@ import { detailColumns } from './detailColumns';
 type BreakdownDrawerProps = {
   open: boolean;
   records: DealRecord[];
+  baselineRecords: DealRecord[];
   historicalRepurchaseRecords: DealRecord[];
   dateRange: [string, string] | null;
   comparisonRecords: DealRecord[];
+  comparisonBaselineRecords: DealRecord[];
   comparisonHistoricalRepurchaseRecords: DealRecord[];
   comparisonDateRange: [string, string] | null;
   primaryDimension: DimensionKey;
@@ -30,9 +32,11 @@ type BreakdownDrawerProps = {
 export default function BreakdownDrawer({
   open,
   records,
+  baselineRecords,
   historicalRepurchaseRecords,
   dateRange,
   comparisonRecords,
+  comparisonBaselineRecords,
   comparisonHistoricalRepurchaseRecords,
   comparisonDateRange,
   primaryDimension,
@@ -57,7 +61,7 @@ export default function BreakdownDrawer({
         <>
           <Tabs
             items={breakdownDimensions.map((breakdownDimension) => {
-              const currentRows = buildReportBreakdownRows(records, historicalRepurchaseRecords, {
+              const currentRows = buildReportBreakdownRows(records, baselineRecords, historicalRepurchaseRecords, {
                 primaryDimension,
                 primaryDimensionValue: row.primaryDimensionValue,
                 breakdownDimension: breakdownDimension.key,
@@ -68,6 +72,7 @@ export default function BreakdownDrawer({
                       currentRows,
                       buildReportBreakdownRows(
                         comparisonRecords,
+                        comparisonBaselineRecords,
                         comparisonHistoricalRepurchaseRecords,
                         {
                           primaryDimension,

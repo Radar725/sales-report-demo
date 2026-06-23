@@ -14,14 +14,24 @@ export type BreakdownRow = MetricValue & {
   breakdownDimensionValue: string;
 };
 
-export type ReportContributionValues = {
+export type ReportShareValues = {
   reportedAmountRate: number | null;
   dealCountRate: number | null;
   customerCountRate: number | null;
-  repurchaseCustomerTotalRate: number | null;
-  repurchaseDealCountTotalRate: number | null;
-  repurchaseAmountTotalRate: number | null;
 };
+
+export type ReportFilteredContributionValues = {
+  reportedAmountContributionRate: number | null;
+  dealCountContributionRate: number | null;
+  customerCountContributionRate: number | null;
+};
+
+export type ReportContributionValues = ReportShareValues &
+  ReportFilteredContributionValues & {
+    repurchaseCustomerTotalRate: number | null;
+    repurchaseDealCountTotalRate: number | null;
+    repurchaseAmountTotalRate: number | null;
+  };
 
 export type ReportHistoricalRepurchaseContributionValues = {
   repurchaseCustomerTotalRate: number | null;
@@ -57,6 +67,9 @@ const REPORT_METRIC_KEYS: ReportComparisonMetricKey[] = [
   'reportedAmountRate',
   'dealCountRate',
   'customerCountRate',
+  'reportedAmountContributionRate',
+  'dealCountContributionRate',
+  'customerCountContributionRate',
   'repurchaseCustomerTotalRate',
   'repurchaseDealCountTotalRate',
   'repurchaseAmountTotalRate',
@@ -263,17 +276,35 @@ function toMetricValue(row: AggregateSummary): MetricValue {
   return metrics;
 }
 
-function calculateContributionValues(
+function calculateShareValues(
+  current: MetricValue,
+  baseline: MetricValue | undefined,
+): ReportShareValues {
+  if (!baseline) {
+    return {
+      reportedAmountRate: null,
+      dealCountRate: null,
+      customerCountRate: null,
+    };
+  }
+
+  return {
+    reportedAmountRate: baseline.reportedAmount === 0 ? null : current.reportedAmount / baseline.reportedAmount,
+    dealCountRate: baseline.dealCount === 0 ? null : current.dealCount / baseline.dealCount,
+    customerCountRate: baseline.customerCount === 0 ? null : current.customerCount / baseline.customerCount,
+  };
+}
+
+function calculateFilteredContributionValues(
   current: MetricValue,
   total: MetricValue,
-): ReportContributionValues {
+): ReportFilteredContributionValues {
   return {
-    reportedAmountRate: total.reportedAmount === 0 ? null : current.reportedAmount / total.reportedAmount,
-    dealCountRate: total.dealCount === 0 ? null : current.dealCount / total.dealCount,
-    customerCountRate: total.customerCount === 0 ? null : current.customerCount / total.customerCount,
-    repurchaseCustomerTotalRate: null,
-    repurchaseDealCountTotalRate: null,
-    repurchaseAmountTotalRate: null,
+    reportedAmountContributionRate:
+      total.reportedAmount === 0 ? null : current.reportedAmount / total.reportedAmount,
+    dealCountContributionRate: total.dealCount === 0 ? null : current.dealCount / total.dealCount,
+    customerCountContributionRate:
+      total.customerCount === 0 ? null : current.customerCount / total.customerCount,
   };
 }
 
@@ -305,10 +336,14 @@ function calculateHistoricalRepurchaseContributionValues(
 
 export function buildReportSummaryRows(
   records: DealRecord[],
+  baselineRecords: DealRecord[],
   historicalRepurchaseRecords: DealRecord[],
   primaryDimension: DimensionKey,
 ): ReportSummaryRow[] {
   const total = calculateMetrics(records);
+  const baselineByValue = new Map(
+    aggregate(baselineRecords, primaryDimension).map((row) => [row.value, toMetricValue(row)]),
+  );
   const historicalByValue = new Map(
     aggregate(historicalRepurchaseRecords, primaryDimension).map((row) => [
       row.value,
@@ -322,7 +357,8 @@ export function buildReportSummaryRows(
       key: getSummaryRowKey(primaryDimension, row.value),
       primaryDimensionValue: row.value,
       ...metrics,
-      ...calculateContributionValues(metrics, total),
+      ...calculateShareValues(metrics, baselineByValue.get(row.value)),
+      ...calculateFilteredContributionValues(metrics, total),
       ...calculateHistoricalRepurchaseContributionValues(metrics, historicalByValue.get(row.value)),
     };
   });
@@ -330,6 +366,7 @@ export function buildReportSummaryRows(
 
 export function buildReportBreakdownRows(
   records: DealRecord[],
+  baselineRecords: DealRecord[],
   historicalRepurchaseRecords: DealRecord[],
   query: BreakdownQuery,
 ): ReportBreakdownRow[] {
@@ -337,6 +374,12 @@ export function buildReportBreakdownRows(
     getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue;
   const scopedRecords = records.filter(isPrimaryRow);
   const total = calculateMetrics(scopedRecords);
+  const baselineByValue = new Map(
+    aggregate(baselineRecords.filter(isPrimaryRow), query.breakdownDimension).map((row) => [
+      row.value,
+      toMetricValue(row),
+    ]),
+  );
   const historicalByValue = new Map(
     aggregate(historicalRepurchaseRecords.filter(isPrimaryRow), query.breakdownDimension).map(
       (row) => [row.value, toMetricValue(row)],
@@ -349,7 +392,8 @@ export function buildReportBreakdownRows(
       key: `${query.breakdownDimension}:${row.value}`,
       breakdownDimensionValue: row.value,
       ...metrics,
-      ...calculateContributionValues(metrics, total),
+      ...calculateShareValues(metrics, baselineByValue.get(row.value)),
+      ...calculateFilteredContributionValues(metrics, total),
       ...calculateHistoricalRepurchaseContributionValues(metrics, historicalByValue.get(row.value)),
     };
   });
