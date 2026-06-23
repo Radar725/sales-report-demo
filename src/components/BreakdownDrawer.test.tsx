@@ -2,6 +2,7 @@ import '../test/spyAntdTable';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { ReportSummaryRow } from '../domain/analytics';
 import { mockDeals } from '../data/mockDeals';
 import { expectReportTablesUseSorterIconTooltip, tableRenderSpy } from '../test/spyAntdTable';
 import { detailColumns } from './detailColumns';
@@ -48,7 +49,7 @@ describe('BreakdownDrawer sorter tooltip', () => {
         comparisonHistoricalRepurchaseRecords={[]}
         comparisonDateRange={null}
         primaryDimension="consultant"
-        row={summaryRow}
+        row={summaryRow as ReportSummaryRow}
         filters={{ customerScope: 'all', dealType: 'all' }}
         onClose={() => {}}
       />,

@@ -1,6 +1,8 @@
 import '../test/spyAntdTable';
 import { render } from '@testing-library/react';
 import { beforeEach, describe, it, vi } from 'vitest';
+import type { ReportSummaryRow } from '../domain/analytics';
+import { getDimension } from '../domain/dimensions';
 import { expectReportTablesUseSorterIconTooltip, tableRenderSpy } from '../test/spyAntdTable';
 import SummaryTable from './SummaryTable';
 
@@ -32,8 +34,8 @@ describe('SummaryTable sorter tooltip', () => {
   it('anchors sort instructions to the sorter icon', () => {
     render(
       <SummaryTable
-        primaryDimension={{ key: 'consultant', label: '咨询师' }}
-        rows={[summaryRow]}
+        primaryDimension={getDimension('consultant')}
+        rows={[summaryRow as ReportSummaryRow]}
         filters={{ customerScope: 'all', dealType: 'all' }}
         hasComparison={false}
         onOpenBreakdown={vi.fn()}

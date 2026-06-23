@@ -1,16 +1,16 @@
 import { createElement } from 'react';
-import { vi } from 'vitest';
+import { expect, vi } from 'vitest';
 import type { TableProps } from 'antd/es/table';
 
-export const tableRenderSpy = vi.fn<(props: TableProps) => void>();
+export const tableRenderSpy = vi.fn<(props: TableProps<Record<string, unknown>>) => void>();
 
 vi.mock('antd', async (importOriginal) => {
   const actual = await importOriginal<typeof import('antd')>();
   const ActualTable = actual.Table;
 
-  function Table(props: TableProps) {
+  function Table(props: TableProps<Record<string, unknown>>) {
     tableRenderSpy(props);
-    return createElement(ActualTable, props);
+    return createElement(ActualTable, props as never);
   }
 
   return { ...actual, Table };
