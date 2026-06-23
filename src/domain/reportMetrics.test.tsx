@@ -1,8 +1,36 @@
+import { isValidElement, type ReactElement } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { MetricColumnTitle } from '../components/MetricColumnTitle';
 import { buildReportMetricColumns, REPORT_METRIC_WIDTHS } from './reportMetrics';
 
 const allFilters = { customerScope: 'all', dealType: 'all' } as const;
+
+const reportMetricDescriptions: Record<string, string> = {
+  上报业绩: '当前维度下上报的成交金额，不含定金。',
+  确认业绩: '当前维度下上报的成交记录对应的财务确认金额。',
+  业绩确认率: '确认业绩占上报业绩的比例，反映已上报业绩的确认进度。',
+  成交单量: '当前维度下的成交记录数，不含定金。',
+  成交客户数: '当前维度下有成交的去重客户数，不含定金。',
+  客单价: '平均每笔成交金额，计算公式：上报业绩 ÷ 成交单量。',
+  业绩占比: '当前行上报业绩占同维度总业绩的比例。',
+  成交单量占比: '当前行成交单量占同维度总成交单量的比例。',
+  成交客户占比: '当前行成交客户数占同维度总成交客户数的比例。',
+  业绩贡献: '当前行上报业绩占当前列表汇总业绩的比例。',
+  成交单量贡献: '当前行成交单量占当前列表汇总成交单量的比例。',
+  成交客户贡献: '当前行成交客户数占当前列表汇总成交客户数的比例。',
+  复购客户历史占比: '当期复购客户数占截至统计期末累计复购客户数的比例，反映复购客户的当期活跃度。',
+  复购单量历史占比: '当期复购单量占截至统计期末累计复购单量的比例，反映复购频次的当期活跃度。',
+  复购业绩历史占比: '当期复购业绩占截至统计期末累计复购业绩的比例，反映复购业绩的当期贡献。',
+};
+
+function getMetricColumnTitleProps(title: unknown) {
+  expect(isValidElement(title)).toBe(true);
+  const element = title as ReactElement<{ label: string; description: string }>;
+  expect(element.type).toBe(MetricColumnTitle);
+  return element.props;
+}
 
 const baseReportRecord = {
   reportedAmount: 12000,
@@ -50,11 +78,17 @@ describe('report metric columns', () => {
     ]);
   });
 
-  it('shows contribution columns with 贡献 labels when both filters are all', () => {
-    expect(buildReportMetricColumns(allFilters).map((column) => column.title)).toEqual([
+  it('renders MetricColumnTitle with approved labels and descriptions when both filters are all', () => {
+    const columns = buildReportMetricColumns(allFilters);
+
+    expect(columns.map((column) => getMetricColumnTitleProps(column.title).label)).toEqual([
       '上报业绩', '确认业绩', '业绩确认率', '成交单量', '成交客户数', '客单价',
       '业绩贡献', '成交单量贡献', '成交客户贡献',
     ]);
+    columns.forEach((column) => {
+      const { label, description } = getMetricColumnTitleProps(column.title);
+      expect(description).toBe(reportMetricDescriptions[label]);
+    });
   });
 
   it('includes share and contribution metrics when either filter is narrowed', () => {
@@ -105,18 +139,32 @@ describe('report metric columns', () => {
     expect(screen.getAllByText('—')).toHaveLength(1);
   });
 
-  it('prefixes every metric with customer scope then deal type', () => {
-    const titles = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'newDiagnosis' })
-      .map((column) => column.title);
+  it('prefixes every metric label with customer scope then deal type', () => {
+    const labels = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'newDiagnosis' })
+      .map((column) => getMetricColumnTitleProps(column.title).label);
 
-    expect(titles).toEqual([
+    expect(labels).toEqual([
       '新客新诊上报业绩', '新客新诊确认业绩', '新客新诊业绩确认率',
       '新客新诊成交单量', '新客新诊成交客户数', '新客新诊客单价',
       '新客新诊业绩占比', '新客新诊成交单量占比', '新客新诊成交客户占比',
       '新客新诊业绩贡献', '新客新诊成交单量贡献', '新客新诊成交客户贡献',
     ]);
-    expect(titles).toContain('新客新诊确认业绩');
-    expect(titles).toContain('新客新诊业绩确认率');
+    expect(labels).toContain('新客新诊确认业绩');
+    expect(labels).toContain('新客新诊业绩确认率');
+  });
+
+  it('uses base descriptions for prefixed metric titles', async () => {
+    const user = userEvent.setup();
+    const column = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'newDiagnosis' })
+      .find((item) => item.key === 'reportedAmount')!;
+    const { label, description } = getMetricColumnTitleProps(column.title);
+
+    expect(label).toBe('新客新诊上报业绩');
+    expect(description).toBe(reportMetricDescriptions['上报业绩']);
+
+    render(<>{column.title}</>);
+    await user.hover(screen.getByText('新客新诊上报业绩'));
+    expect(await screen.findByText(reportMetricDescriptions['上报业绩'])).toBeInTheDocument();
   });
 
   it('renders contribution comparison deltas when hasComparison is true', () => {
@@ -133,9 +181,14 @@ describe('report metric columns', () => {
 
   it('adds customer-scoped repurchase total columns only for repurchase', () => {
     const repurchase = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'repurchase' });
-    expect(repurchase.slice(-3).map((column) => column.title)).toEqual([
+    expect(repurchase.slice(-3).map((column) => getMetricColumnTitleProps(column.title).label)).toEqual([
       '新客复购客户历史占比', '新客复购单量历史占比', '新客复购业绩历史占比',
     ]);
+    repurchase.slice(-3).forEach((column) => {
+      const { label, description } = getMetricColumnTitleProps(column.title);
+      const baseLabel = label.replace(/^新客/, '');
+      expect(description).toBe(reportMetricDescriptions[baseLabel]);
+    });
     expect(buildReportMetricColumns({ customerScope: 'existingCustomers', dealType: 'newDiagnosis' })
       .map((column) => column.key)).not.toContain('repurchaseCustomerTotalRate');
   });
