@@ -26,12 +26,12 @@ const defaultFilters: SalesDashboardFilters = {
 };
 
 describe('sales dashboard filters', () => {
-  it('builds historical repurchase records without the deal-date limit', () => {
+  it('builds historical repurchase records through the period end only', () => {
     const filters = {
       ...defaultFilters,
-      dateRange: ['2026-06-01', '2026-06-30'] as [string, string],
+      dateRange: ['2026-06-01', '2026-06-20'] as [string, string],
       customerScope: 'existingCustomers' as const,
-      consultants: ['张敏'],
+      consultants: ['李然'],
     };
 
     const rows = filterHistoricalRepurchaseRecords(demoDealRecords, filters);
@@ -39,7 +39,8 @@ describe('sales dashboard filters', () => {
     expect(rows).not.toEqual([]);
     expect(rows.every((row) => row.dealType === '复购')).toBe(true);
     expect(rows.every((row) => row.customerCreatedAt < '2026-06-01')).toBe(true);
-    expect(rows.every((row) => row.consultant === '张敏')).toBe(true);
+    expect(rows.every((row) => row.consultant === '李然')).toBe(true);
+    expect(rows.every((row) => row.dealDate <= '2026-06-20')).toBe(true);
     expect(rows.some((row) => row.dealDate < '2026-06-01')).toBe(true);
   });
 

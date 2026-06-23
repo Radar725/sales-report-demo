@@ -264,12 +264,12 @@ describe('sales analytics aggregation', () => {
         reportedAmountRate: 1,
         dealCountRate: 1,
         customerCountRate: 1,
-        repurchaseCustomerTotalRate: null,
-        repurchaseDealCountTotalRate: null,
-        repurchaseAmountTotalRate: null,
         ...baseMetrics,
         confirmedAmount: 10000,
         confirmedAmountRate: 0.6875,
+        repurchaseCustomerTotalRate: 0.2,
+        repurchaseDealCountTotalRate: 0.25,
+        repurchaseAmountTotalRate: 0.3,
       },
     ];
 
@@ -284,12 +284,12 @@ describe('sales analytics aggregation', () => {
         reportedAmountRate: 1,
         dealCountRate: 1,
         customerCountRate: null,
-        repurchaseCustomerTotalRate: null,
-        repurchaseDealCountTotalRate: null,
-        repurchaseAmountTotalRate: null,
         ...baseMetrics,
         confirmedAmount: 8000,
         confirmedAmountRate: 0.625,
+        repurchaseCustomerTotalRate: 0.1,
+        repurchaseDealCountTotalRate: 0.5,
+        repurchaseAmountTotalRate: 0.2,
       },
     ];
 
@@ -301,12 +301,26 @@ describe('sales analytics aggregation', () => {
       'primaryDimensionValue',
     );
 
-    expect(rows.find((row) => row.primaryDimensionValue === '张敏')?.comparison).toMatchObject({
+    const comparison = rows.find((row) => row.primaryDimensionValue === '张敏')?.comparison;
+    expect(comparison).toMatchObject({
       reportedAmount: 0.25,
       confirmedAmount: 0.25,
       confirmedAmountRate: 0.1,
       customerCount: null,
+      repurchaseCustomerTotalRate: 1,
+      repurchaseDealCountTotalRate: -0.5,
     });
+    expect(comparison?.repurchaseAmountTotalRate).toBeCloseTo(0.5);
+
+    expect(
+      attachReportComparison(
+        [{ ...currentRows[0], repurchaseAmountTotalRate: 0.3 }],
+        [{ ...comparisonRows[0], repurchaseAmountTotalRate: 0 }],
+        ['2026-06-01', '2026-06-30'],
+        ['2026-05-01', '2026-05-31'],
+        'primaryDimensionValue',
+      )[0].comparison.repurchaseAmountTotalRate,
+    ).toBeNull();
   });
 
   it('calculates repurchase total rates from same-dimension history', () => {

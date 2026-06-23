@@ -71,7 +71,7 @@ describe('App', () => {
     expect(screen.queryByRole('columnheader', { name: '新客成交率' })).not.toBeInTheDocument();
   });
 
-  it('uses combined prefixes in the main table and shows 100 percent for all scope', async () => {
+  it('uses combined prefixes in the main table and hides ratio columns for all scope', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -85,7 +85,9 @@ describe('App', () => {
     await selectOption(user, '成交类型', '全部');
     await applyFilters(user);
     expect(screen.getByRole('columnheader', { name: '上报业绩' })).toBeInTheDocument();
-    expect(screen.getAllByText('100.0%').length).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByRole('columnheader', { name: '业绩占比' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '成交单量占比' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '成交客户占比' })).not.toBeInTheDocument();
   });
 
   it('shows only old customer records when old customers are selected', async () => {
@@ -347,7 +349,7 @@ describe('App', () => {
     expect(funnelDrawer.querySelector('.metric-change')).toBeTruthy();
   });
 
-  it('shows repurchase total contribution columns and omits comparison deltas for them', async () => {
+  it('shows repurchase total contribution columns with comparison deltas', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -357,9 +359,9 @@ describe('App', () => {
     await applyFilters(user);
 
     for (const column of [
-      '新客复购客户占总复购比',
-      '新客复购单量占总复购比',
-      '新客复购业绩占总复购比',
+      '新客复购客户历史占比',
+      '新客复购单量历史占比',
+      '新客复购业绩历史占比',
     ]) {
       expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
     }
@@ -367,39 +369,32 @@ describe('App', () => {
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     for (const column of [
-      '新客复购客户占总复购比',
-      '新客复购单量占总复购比',
-      '新客复购业绩占总复购比',
+      '新客复购客户历史占比',
+      '新客复购单量历史占比',
+      '新客复购业绩历史占比',
     ]) {
       expect(within(drawer).getByRole('columnheader', { name: column })).toBeInTheDocument();
     }
 
     const reportTable = document.querySelector('.report-table')!;
-    const totalRateHeader = within(reportTable as HTMLElement).getByRole('columnheader', {
-      name: '新客复购客户占总复购比',
-    });
-    const totalRateCell = totalRateHeader.closest('table')!.querySelector(
-      'tbody tr td:nth-child(' +
-        (Array.from(totalRateHeader.closest('table')!.querySelectorAll('th') as NodeListOf<HTMLElement>).indexOf(
-          totalRateHeader,
-        ) +
-          1) +
-        ')',
-    );
-    expect(totalRateCell?.querySelector('.metric-change')).toBeNull();
-
-    const reportedAmountHeader = within(reportTable as HTMLElement).getByRole('columnheader', {
-      name: '新客复购上报业绩',
-    });
-    const reportedAmountCell = reportedAmountHeader.closest('table')!.querySelector(
-      'tbody tr td:nth-child(' +
-        (Array.from(reportedAmountHeader.closest('table')!.querySelectorAll('th') as NodeListOf<HTMLElement>).indexOf(
-          reportedAmountHeader,
-        ) +
-          1) +
-        ')',
-    );
-    expect(reportedAmountCell?.querySelector('.metric-change')).toBeTruthy();
+    for (const columnName of [
+      '新客复购客户历史占比',
+      '新客复购单量历史占比',
+      '新客复购业绩历史占比',
+    ]) {
+      const header = within(reportTable as HTMLElement).getByRole('columnheader', {
+        name: columnName,
+      });
+      const cell = header.closest('table')!.querySelector(
+        'tbody tr td:nth-child(' +
+          (Array.from(header.closest('table')!.querySelectorAll('th') as NodeListOf<HTMLElement>).indexOf(
+            header,
+          ) +
+            1) +
+          ')',
+      );
+      expect(cell?.querySelector('.metric-change')).toBeTruthy();
+    }
   });
 
   it('hides repurchase total contribution columns for non-repurchase deal types', async () => {
@@ -411,7 +406,7 @@ describe('App', () => {
     await selectOption(user, '成交类型', '新诊');
     await applyFilters(user);
 
-    expect(screen.queryByRole('columnheader', { name: '新客复购客户占总复购比' })).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: '新客复购客户历史占比' })).toBeNull();
   });
 
 });

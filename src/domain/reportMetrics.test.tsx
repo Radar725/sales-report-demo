@@ -20,8 +20,35 @@ const baseReportRecord = {
 } as const;
 
 describe('report metric columns', () => {
-  it('always exposes the report metrics with semantic widths', () => {
+  it('exposes only base metrics when both filters are all', () => {
     const columns = buildReportMetricColumns(allFilters);
+
+    expect(columns.map((column) => column.key)).toEqual([
+      'reportedAmount',
+      'confirmedAmount',
+      'confirmedAmountRate',
+      'dealCount',
+      'customerCount',
+      'averageDealAmount',
+    ]);
+    expect(columns.map((column) => column.width)).toEqual([
+      REPORT_METRIC_WIDTHS.amount,
+      REPORT_METRIC_WIDTHS.amount,
+      REPORT_METRIC_WIDTHS.rate,
+      REPORT_METRIC_WIDTHS.count,
+      REPORT_METRIC_WIDTHS.count,
+      REPORT_METRIC_WIDTHS.amount,
+    ]);
+  });
+
+  it('keeps original metric names without ratio columns when both filters are all', () => {
+    expect(buildReportMetricColumns(allFilters).map((column) => column.title)).toEqual([
+      '上报业绩', '确认业绩', '业绩确认率', '成交单量', '成交客户数', '客单价',
+    ]);
+  });
+
+  it('includes contribution metrics when either filter is narrowed', () => {
+    const columns = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'all' });
 
     expect(columns.map((column) => column.key)).toEqual([
       'reportedAmount',
@@ -34,28 +61,10 @@ describe('report metric columns', () => {
       'dealCountRate',
       'customerCountRate',
     ]);
-    expect(columns.map((column) => column.width)).toEqual([
-      REPORT_METRIC_WIDTHS.amount,
-      REPORT_METRIC_WIDTHS.amount,
-      REPORT_METRIC_WIDTHS.rate,
-      REPORT_METRIC_WIDTHS.count,
-      REPORT_METRIC_WIDTHS.count,
-      REPORT_METRIC_WIDTHS.amount,
-      REPORT_METRIC_WIDTHS.rate,
-      REPORT_METRIC_WIDTHS.rate,
-      REPORT_METRIC_WIDTHS.rate,
-    ]);
-  });
-
-  it('keeps original metric names when both filters are all', () => {
-    expect(buildReportMetricColumns(allFilters).map((column) => column.title)).toEqual([
-      '上报业绩', '确认业绩', '业绩确认率', '成交单量', '成交客户数', '客单价',
-      '业绩占比', '成交单量占比', '成交客户占比',
-    ]);
   });
 
   it('renders comparison deltas when hasComparison is true', () => {
-    const columns = buildReportMetricColumns(allFilters, true);
+    const columns = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'all' }, true);
     const record = {
       ...baseReportRecord,
       comparison: {
@@ -99,13 +108,13 @@ describe('report metric columns', () => {
   it('adds customer-scoped repurchase total columns only for repurchase', () => {
     const repurchase = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'repurchase' });
     expect(repurchase.slice(-3).map((column) => column.title)).toEqual([
-      '新客复购客户占总复购比', '新客复购单量占总复购比', '新客复购业绩占总复购比',
+      '新客复购客户历史占比', '新客复购单量历史占比', '新客复购业绩历史占比',
     ]);
     expect(buildReportMetricColumns({ customerScope: 'existingCustomers', dealType: 'newDiagnosis' })
       .map((column) => column.key)).not.toContain('repurchaseCustomerTotalRate');
   });
 
-  it('renders repurchase total values without comparison deltas', () => {
+  it('renders repurchase total values with comparison deltas', () => {
     const columns = buildReportMetricColumns({ customerScope: 'all', dealType: 'repurchase' }, true);
     const column = columns.find((item) => item.key === 'repurchaseCustomerTotalRate')!;
     render(<>{column.render?.(0.25, {
@@ -114,6 +123,6 @@ describe('report metric columns', () => {
       comparison: { repurchaseCustomerTotalRate: 0.5 },
     }, 0)}</>);
     expect(screen.getByText('25.0%')).toBeInTheDocument();
-    expect(screen.queryByText(/↑|↓/)).not.toBeInTheDocument();
+    expect(screen.getByText('↑ 50.0%')).toBeInTheDocument();
   });
 });

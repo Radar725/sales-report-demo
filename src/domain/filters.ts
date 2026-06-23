@@ -145,8 +145,12 @@ export function filterHistoricalRepurchaseRecords(
   records: DealRecord[],
   filters: SalesDashboardFilters,
 ) {
-  return records.filter((record) =>
-    matchesNonDateFilters(record, { ...filters, dealType: 'repurchase' }),
+  const periodEnd = filters.dateRange?.[1];
+
+  return records.filter(
+    (record) =>
+      (periodEnd === undefined || record.dealDate <= periodEnd) &&
+      matchesNonDateFilters(record, { ...filters, dealType: 'repurchase' }),
   );
 }
 

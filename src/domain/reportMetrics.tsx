@@ -112,10 +112,14 @@ const contributionMetrics: ReportMetricDefinition[] = [
 ];
 
 const repurchaseTotalContributionMetrics: ReportMetricDefinition[] = [
-  { key: 'repurchaseCustomerTotalRate', label: '复购客户占总复购比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true, participatesInComparison: false },
-  { key: 'repurchaseDealCountTotalRate', label: '复购单量占总复购比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true, participatesInComparison: false },
-  { key: 'repurchaseAmountTotalRate', label: '复购业绩占总复购比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true, participatesInComparison: false },
+  { key: 'repurchaseCustomerTotalRate', label: '复购客户历史占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true },
+  { key: 'repurchaseDealCountTotalRate', label: '复购单量历史占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true },
+  { key: 'repurchaseAmountTotalRate', label: '复购业绩历史占比', format: 'percent', width: REPORT_METRIC_WIDTHS.rate, customerScopePrefixOnly: true },
 ];
+
+function shouldShowContributionRates(filters: ReportColumnFilters) {
+  return !(filters.customerScope === 'all' && filters.dealType === 'all');
+}
 
 export function buildReportMetricColumns<T extends ReportMetricValue & ComparableRecord>(
   filters: ReportColumnFilters,
@@ -123,7 +127,7 @@ export function buildReportMetricColumns<T extends ReportMetricValue & Comparabl
 ): ColumnsType<T> {
   const metrics = [
     ...baseMetrics,
-    ...contributionMetrics,
+    ...(shouldShowContributionRates(filters) ? contributionMetrics : []),
     ...(filters.dealType === 'repurchase' ? repurchaseTotalContributionMetrics : []),
   ];
 
