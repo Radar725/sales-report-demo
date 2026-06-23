@@ -20,7 +20,7 @@ const baseReportRecord = {
 } as const;
 
 describe('report metric columns', () => {
-  it('exposes only base metrics when both filters are all', () => {
+  it('exposes base and contribution metrics when both filters are all', () => {
     const columns = buildReportMetricColumns(allFilters);
 
     expect(columns.map((column) => column.key)).toEqual([
@@ -30,6 +30,9 @@ describe('report metric columns', () => {
       'dealCount',
       'customerCount',
       'averageDealAmount',
+      'reportedAmountRate',
+      'dealCountRate',
+      'customerCountRate',
     ]);
     expect(columns.map((column) => column.width)).toEqual([
       REPORT_METRIC_WIDTHS.amount,
@@ -38,12 +41,16 @@ describe('report metric columns', () => {
       REPORT_METRIC_WIDTHS.count,
       REPORT_METRIC_WIDTHS.count,
       REPORT_METRIC_WIDTHS.amount,
+      REPORT_METRIC_WIDTHS.rate,
+      REPORT_METRIC_WIDTHS.rate,
+      REPORT_METRIC_WIDTHS.rate,
     ]);
   });
 
-  it('keeps original metric names without ratio columns when both filters are all', () => {
+  it('shows contribution columns with 贡献 labels when both filters are all', () => {
     expect(buildReportMetricColumns(allFilters).map((column) => column.title)).toEqual([
       '上报业绩', '确认业绩', '业绩确认率', '成交单量', '成交客户数', '客单价',
+      '业绩贡献', '成交单量贡献', '成交客户贡献',
     ]);
   });
 
@@ -99,10 +106,22 @@ describe('report metric columns', () => {
     expect(titles).toEqual([
       '新客新诊上报业绩', '新客新诊确认业绩', '新客新诊业绩确认率',
       '新客新诊成交单量', '新客新诊成交客户数', '新客新诊客单价',
-      '新客新诊业绩占比', '新客新诊成交单量占比', '新客新诊成交客户占比',
+      '新客新诊业绩贡献', '新客新诊成交单量贡献', '新客新诊成交客户贡献',
     ]);
     expect(titles).toContain('新客新诊确认业绩');
     expect(titles).toContain('新客新诊业绩确认率');
+  });
+
+  it('renders contribution comparison deltas when hasComparison is true', () => {
+    const column = buildReportMetricColumns(allFilters, true)
+      .find((item) => item.key === 'reportedAmountRate')!;
+    render(<>{column.render?.(0.4, {
+      ...baseReportRecord,
+      reportedAmountRate: 0.4,
+      comparison: { reportedAmountRate: 0.25 },
+    }, 0)}</>);
+    expect(screen.getByText('40.0%')).toBeInTheDocument();
+    expect(screen.getByText('↑ 25.0%')).toBeInTheDocument();
   });
 
   it('adds customer-scoped repurchase total columns only for repurchase', () => {
