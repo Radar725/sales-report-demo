@@ -9,7 +9,8 @@ export type ReportColumnFilters = {
 
 export type ReportMetricValue = Pick<
   MetricValue,
-  'reportedAmount' | 'dealCount' | 'customerCount' | 'averageDealAmount'
+  'reportedAmount' | 'confirmedAmount' | 'confirmedAmountRate'
+    | 'dealCount' | 'customerCount' | 'averageDealAmount'
 > & {
   reportedAmountRate: number | null;
   dealCountRate: number | null;
@@ -97,6 +98,8 @@ function renderMetricCell(
 
 const baseMetrics: ReportMetricDefinition[] = [
   { key: 'reportedAmount', label: '上报业绩', format: 'amount', width: REPORT_METRIC_WIDTHS.amount },
+  { key: 'confirmedAmount', label: '确认业绩', format: 'amount', width: REPORT_METRIC_WIDTHS.amount },
+  { key: 'confirmedAmountRate', label: '业绩确认率', format: 'percent', width: REPORT_METRIC_WIDTHS.rate },
   { key: 'dealCount', label: '成交单量', format: 'integer', width: REPORT_METRIC_WIDTHS.count },
   { key: 'customerCount', label: '成交客户数', format: 'integer', width: REPORT_METRIC_WIDTHS.count },
   { key: 'averageDealAmount', label: '客单价', format: 'amount', width: REPORT_METRIC_WIDTHS.amount },
