@@ -32,6 +32,24 @@ function getMetricColumnTitleProps(title: unknown) {
   return element.props;
 }
 
+const repurchaseTotalMetricLabels = ['复购客户历史占比', '复购单量历史占比', '复购业绩历史占比'] as const;
+
+function getBaseMetricLabel(prefixedLabel: string) {
+  let label = prefixedLabel.replace(/^新客|^老客/, '');
+
+  if (repurchaseTotalMetricLabels.includes(label as (typeof repurchaseTotalMetricLabels)[number])) {
+    return label;
+  }
+
+  return label.replace(/^新诊|^复购/, '');
+}
+
+function expectApprovedMetricDescription(title: unknown) {
+  const { label, description } = getMetricColumnTitleProps(title);
+  expect(description).toBe(reportMetricDescriptions[getBaseMetricLabel(label)]);
+  return { label, description };
+}
+
 const baseReportRecord = {
   reportedAmount: 12000,
   confirmedAmount: 9600,
@@ -86,8 +104,7 @@ describe('report metric columns', () => {
       '业绩贡献', '成交单量贡献', '成交客户贡献',
     ]);
     columns.forEach((column) => {
-      const { label, description } = getMetricColumnTitleProps(column.title);
-      expect(description).toBe(reportMetricDescriptions[label]);
+      expectApprovedMetricDescription(column.title);
     });
   });
 
@@ -108,6 +125,14 @@ describe('report metric columns', () => {
       'dealCountContributionRate',
       'customerCountContributionRate',
     ]);
+    expect(columns.map((column) => getMetricColumnTitleProps(column.title).label)).toEqual([
+      '新客上报业绩', '新客确认业绩', '新客业绩确认率', '新客成交单量', '新客成交客户数', '新客客单价',
+      '新客业绩占比', '新客成交单量占比', '新客成交客户占比',
+      '新客业绩贡献', '新客成交单量贡献', '新客成交客户贡献',
+    ]);
+    columns.forEach((column) => {
+      expectApprovedMetricDescription(column.title);
+    });
   });
 
   it('renders comparison deltas when hasComparison is true', () => {
@@ -140,8 +165,8 @@ describe('report metric columns', () => {
   });
 
   it('prefixes every metric label with customer scope then deal type', () => {
-    const labels = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'newDiagnosis' })
-      .map((column) => getMetricColumnTitleProps(column.title).label);
+    const columns = buildReportMetricColumns({ customerScope: 'currentNewCustomers', dealType: 'newDiagnosis' });
+    const labels = columns.map((column) => getMetricColumnTitleProps(column.title).label);
 
     expect(labels).toEqual([
       '新客新诊上报业绩', '新客新诊确认业绩', '新客新诊业绩确认率',
@@ -151,6 +176,9 @@ describe('report metric columns', () => {
     ]);
     expect(labels).toContain('新客新诊确认业绩');
     expect(labels).toContain('新客新诊业绩确认率');
+    columns.forEach((column) => {
+      expectApprovedMetricDescription(column.title);
+    });
   });
 
   it('uses base descriptions for prefixed metric titles', async () => {
@@ -185,9 +213,7 @@ describe('report metric columns', () => {
       '新客复购客户历史占比', '新客复购单量历史占比', '新客复购业绩历史占比',
     ]);
     repurchase.slice(-3).forEach((column) => {
-      const { label, description } = getMetricColumnTitleProps(column.title);
-      const baseLabel = label.replace(/^新客/, '');
-      expect(description).toBe(reportMetricDescriptions[baseLabel]);
+      expectApprovedMetricDescription(column.title);
     });
     expect(buildReportMetricColumns({ customerScope: 'existingCustomers', dealType: 'newDiagnosis' })
       .map((column) => column.key)).not.toContain('repurchaseCustomerTotalRate');
