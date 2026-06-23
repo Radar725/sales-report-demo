@@ -4,6 +4,21 @@ import { buildReportMetricColumns, REPORT_METRIC_WIDTHS } from './reportMetrics'
 
 const allFilters = { customerScope: 'all', dealType: 'all' } as const;
 
+const baseReportRecord = {
+  reportedAmount: 12000,
+  confirmedAmount: 9600,
+  confirmedAmountRate: 0.8,
+  dealCount: 2,
+  customerCount: 2,
+  averageDealAmount: 6000,
+  reportedAmountRate: 1,
+  dealCountRate: 1,
+  customerCountRate: 1,
+  repurchaseCustomerTotalRate: null,
+  repurchaseDealCountTotalRate: null,
+  repurchaseAmountTotalRate: null,
+} as const;
+
 describe('report metric columns', () => {
   it('always exposes the report metrics with semantic widths', () => {
     const columns = buildReportMetricColumns(allFilters);
@@ -42,15 +57,7 @@ describe('report metric columns', () => {
   it('renders comparison deltas when hasComparison is true', () => {
     const columns = buildReportMetricColumns(allFilters, true);
     const record = {
-      reportedAmount: 12000,
-      confirmedAmount: 9600,
-      confirmedAmountRate: 0.8,
-      dealCount: 2,
-      customerCount: 2,
-      averageDealAmount: 6000,
-      reportedAmountRate: 1,
-      dealCountRate: 1,
-      customerCountRate: 1,
+      ...baseReportRecord,
       comparison: {
         reportedAmount: 0.25,
         confirmedAmount: 0.2,
@@ -101,7 +108,11 @@ describe('report metric columns', () => {
   it('renders repurchase total values without comparison deltas', () => {
     const columns = buildReportMetricColumns({ customerScope: 'all', dealType: 'repurchase' }, true);
     const column = columns.find((item) => item.key === 'repurchaseCustomerTotalRate')!;
-    render(<>{column.render?.(0.25, { repurchaseCustomerTotalRate: 0.25, comparison: { repurchaseCustomerTotalRate: 0.5 } }, 0)}</>);
+    render(<>{column.render?.(0.25, {
+      ...baseReportRecord,
+      repurchaseCustomerTotalRate: 0.25,
+      comparison: { repurchaseCustomerTotalRate: 0.5 },
+    }, 0)}</>);
     expect(screen.getByText('25.0%')).toBeInTheDocument();
     expect(screen.queryByText(/↑|↓/)).not.toBeInTheDocument();
   });
