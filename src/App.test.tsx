@@ -62,7 +62,7 @@ describe('App', () => {
     render(<App />);
 
     for (const column of [
-      '新客上报业绩', '新客成交单量', '新客成交客户数', '新客客单价',
+      '新客上报业绩', '新客确认业绩', '新客业绩确认率', '新客成交单量', '新客成交客户数', '新客客单价',
       '新客业绩占比', '新客成交单量占比', '新客成交客户占比',
     ]) {
       expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
@@ -170,6 +170,8 @@ describe('App', () => {
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
+    expect(within(drawer).getByRole('columnheader', { name: '新客确认业绩' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('columnheader', { name: '新客业绩确认率' })).toBeInTheDocument();
     await user.click(within(drawer).getByRole('tab', { name: '渠道' }));
     expect(within(drawer).getByRole('cell', { name: '演示渠道 A' })).toBeInTheDocument();
     expect(within(drawer).queryByRole('cell', { name: '自然流量' })).not.toBeInTheDocument();
@@ -221,7 +223,7 @@ describe('App', () => {
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     for (const column of [
-      '老客复购上报业绩', '老客复购成交单量', '老客复购成交客户数',
+      '老客复购上报业绩', '老客复购确认业绩', '老客复购业绩确认率', '老客复购成交单量', '老客复购成交客户数',
       '老客复购客单价', '老客复购业绩占比',
       '老客复购成交单量占比', '老客复购成交客户占比',
     ]) {
