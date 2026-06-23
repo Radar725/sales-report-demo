@@ -265,23 +265,12 @@ function toMetricValue(row: AggregateSummary): MetricValue {
 
 function calculateContributionValues(
   current: MetricValue,
-  baseline: MetricValue | undefined,
+  total: MetricValue,
 ): ReportContributionValues {
-  if (!baseline) {
-    return {
-      reportedAmountRate: null,
-      dealCountRate: null,
-      customerCountRate: null,
-      repurchaseCustomerTotalRate: null,
-      repurchaseDealCountTotalRate: null,
-      repurchaseAmountTotalRate: null,
-    };
-  }
-
   return {
-    reportedAmountRate: baseline.reportedAmount === 0 ? null : current.reportedAmount / baseline.reportedAmount,
-    dealCountRate: baseline.dealCount === 0 ? null : current.dealCount / baseline.dealCount,
-    customerCountRate: baseline.customerCount === 0 ? null : current.customerCount / baseline.customerCount,
+    reportedAmountRate: total.reportedAmount === 0 ? null : current.reportedAmount / total.reportedAmount,
+    dealCountRate: total.dealCount === 0 ? null : current.dealCount / total.dealCount,
+    customerCountRate: total.customerCount === 0 ? null : current.customerCount / total.customerCount,
     repurchaseCustomerTotalRate: null,
     repurchaseDealCountTotalRate: null,
     repurchaseAmountTotalRate: null,
@@ -316,13 +305,10 @@ function calculateHistoricalRepurchaseContributionValues(
 
 export function buildReportSummaryRows(
   records: DealRecord[],
-  baselineRecords: DealRecord[],
   historicalRepurchaseRecords: DealRecord[],
   primaryDimension: DimensionKey,
 ): ReportSummaryRow[] {
-  const baselineByValue = new Map(
-    aggregate(baselineRecords, primaryDimension).map((row) => [row.value, toMetricValue(row)]),
-  );
+  const total = calculateMetrics(records);
   const historicalByValue = new Map(
     aggregate(historicalRepurchaseRecords, primaryDimension).map((row) => [
       row.value,
@@ -336,7 +322,7 @@ export function buildReportSummaryRows(
       key: getSummaryRowKey(primaryDimension, row.value),
       primaryDimensionValue: row.value,
       ...metrics,
-      ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
+      ...calculateContributionValues(metrics, total),
       ...calculateHistoricalRepurchaseContributionValues(metrics, historicalByValue.get(row.value)),
     };
   });
@@ -344,31 +330,26 @@ export function buildReportSummaryRows(
 
 export function buildReportBreakdownRows(
   records: DealRecord[],
-  baselineRecords: DealRecord[],
   historicalRepurchaseRecords: DealRecord[],
   query: BreakdownQuery,
 ): ReportBreakdownRow[] {
   const isPrimaryRow = (record: DealRecord) =>
     getRecordDimensionValue(record, query.primaryDimension) === query.primaryDimensionValue;
-  const baselineByValue = new Map(
-    aggregate(baselineRecords.filter(isPrimaryRow), query.breakdownDimension).map((row) => [
-      row.value,
-      toMetricValue(row),
-    ]),
-  );
+  const scopedRecords = records.filter(isPrimaryRow);
+  const total = calculateMetrics(scopedRecords);
   const historicalByValue = new Map(
     aggregate(historicalRepurchaseRecords.filter(isPrimaryRow), query.breakdownDimension).map(
       (row) => [row.value, toMetricValue(row)],
     ),
   );
 
-  return aggregate(records.filter(isPrimaryRow), query.breakdownDimension).map((row) => {
+  return aggregate(scopedRecords, query.breakdownDimension).map((row) => {
     const metrics = toMetricValue(row);
     return {
       key: `${query.breakdownDimension}:${row.value}`,
       breakdownDimensionValue: row.value,
       ...metrics,
-      ...calculateContributionValues(metrics, baselineByValue.get(row.value)),
+      ...calculateContributionValues(metrics, total),
       ...calculateHistoricalRepurchaseContributionValues(metrics, historicalByValue.get(row.value)),
     };
   });
