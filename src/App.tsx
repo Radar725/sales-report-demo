@@ -19,7 +19,6 @@ import {
 import { getDefaultComparisonDateRange } from './domain/comparison';
 import { dimensions, getDimension, type DimensionKey } from './domain/dimensions';
 import {
-  createBaselineFilters,
   filterDealRecords,
   filterHistoricalRepurchaseRecords,
   type SalesDashboardFilters,
@@ -82,10 +81,6 @@ export default function App() {
   const [selectedFunnelBreakdownRow, setSelectedFunnelBreakdownRow] = useState<FunnelSummaryRow | null>(null);
 
   const filteredRecords = useMemo(() => filterDealRecords(demoDealRecords, filters), [filters]);
-  const baselineRecords = useMemo(
-    () => filterDealRecords(demoDealRecords, createBaselineFilters(filters)),
-    [filters],
-  );
   const hasPerformanceComparison = filters.comparisonDateRange !== null;
   const comparisonFilters = useMemo(
     () =>
@@ -97,13 +92,6 @@ export default function App() {
   const comparisonFilteredRecords = useMemo(
     () =>
       comparisonFilters ? filterDealRecords(demoDealRecords, comparisonFilters) : [],
-    [comparisonFilters],
-  );
-  const comparisonBaselineRecords = useMemo(
-    () =>
-      comparisonFilters
-        ? filterDealRecords(demoDealRecords, createBaselineFilters(comparisonFilters))
-        : [],
     [comparisonFilters],
   );
   const historicalRepurchaseRecords = useMemo(
@@ -118,7 +106,6 @@ export default function App() {
   const summaryRows = useMemo(() => {
     const currentRows = buildReportSummaryRows(
       filteredRecords,
-      baselineRecords,
       historicalRepurchaseRecords,
       primaryDimension,
     );
@@ -127,7 +114,6 @@ export default function App() {
     }
     const comparisonRows = buildReportSummaryRows(
       comparisonFilteredRecords,
-      comparisonBaselineRecords,
       comparisonHistoricalRepurchaseRecords,
       primaryDimension,
     );
@@ -140,12 +126,10 @@ export default function App() {
     );
   }, [
     filteredRecords,
-    baselineRecords,
     historicalRepurchaseRecords,
     primaryDimension,
     hasPerformanceComparison,
     comparisonFilteredRecords,
-    comparisonBaselineRecords,
     comparisonHistoricalRepurchaseRecords,
     filters.dateRange,
     filters.comparisonDateRange,
@@ -270,11 +254,9 @@ export default function App() {
                 <BreakdownDrawer
                   open={selectedBreakdownRow !== null}
                   records={filteredRecords}
-                  baselineRecords={baselineRecords}
                   historicalRepurchaseRecords={historicalRepurchaseRecords}
                   dateRange={filters.dateRange}
                   comparisonRecords={comparisonFilteredRecords}
-                  comparisonBaselineRecords={comparisonBaselineRecords}
                   comparisonHistoricalRepurchaseRecords={comparisonHistoricalRepurchaseRecords}
                   comparisonDateRange={filters.comparisonDateRange}
                   primaryDimension={primaryDimension}
