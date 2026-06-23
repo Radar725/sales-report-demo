@@ -23,6 +23,7 @@ describe('sales analytics aggregation', () => {
       primaryDimensionValue: '张敏',
       reportedAmount: 1800000,
       confirmedAmount: 1439000,
+      confirmedAmountRate: 1439000 / 1800000,
       dealCount: 5,
       customerCount: 4,
       averageDealAmount: 360000,
@@ -44,6 +45,19 @@ describe('sales analytics aggregation', () => {
       newCustomerAmountContributionRate: 0.6944444444444444,
       historicalRepurchaseCustomerContributionRate: 0.2,
       historicalRepurchaseAmountContributionRate: 0.1375,
+    });
+  });
+
+  it('returns an unavailable confirmation rate when reported amount is zero', () => {
+    const [row] = buildSummaryRows(
+      [{ ...mockDeals[0], reportedAmount: 0, confirmedAmount: 412000 }],
+      'total',
+    );
+
+    expect(row).toMatchObject({
+      reportedAmount: 0,
+      confirmedAmount: 412000,
+      confirmedAmountRate: null,
     });
   });
 
@@ -218,6 +232,7 @@ describe('sales analytics aggregation', () => {
   it('attaches period-over-period comparison changes to summary rows', () => {
     const baseMetrics = {
       confirmedAmount: 0,
+      confirmedAmountRate: 0,
       newDiagnosisAmount: 0,
       newDiagnosisDealCount: 0,
       newDiagnosisCustomerCount: 0,
@@ -253,6 +268,8 @@ describe('sales analytics aggregation', () => {
         repurchaseDealCountTotalRate: null,
         repurchaseAmountTotalRate: null,
         ...baseMetrics,
+        confirmedAmount: 10000,
+        confirmedAmountRate: 0.6875,
       },
     ];
 
@@ -271,6 +288,8 @@ describe('sales analytics aggregation', () => {
         repurchaseDealCountTotalRate: null,
         repurchaseAmountTotalRate: null,
         ...baseMetrics,
+        confirmedAmount: 8000,
+        confirmedAmountRate: 0.625,
       },
     ];
 
@@ -284,6 +303,8 @@ describe('sales analytics aggregation', () => {
 
     expect(rows.find((row) => row.primaryDimensionValue === '张敏')?.comparison).toMatchObject({
       reportedAmount: 0.25,
+      confirmedAmount: 0.25,
+      confirmedAmountRate: 0.1,
       customerCount: null,
     });
   });

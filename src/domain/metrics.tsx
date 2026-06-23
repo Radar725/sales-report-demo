@@ -5,6 +5,7 @@ import { Popover } from 'antd';
 export type MetricKey =
   | 'reportedAmount'
   | 'confirmedAmount'
+  | 'confirmedAmountRate'
   | 'dealCount'
   | 'customerCount'
   | 'averageDealAmount'
@@ -27,7 +28,9 @@ export type MetricKey =
   | 'historicalRepurchaseCustomerContributionRate'
   | 'historicalRepurchaseAmountContributionRate';
 
-export type MetricValue = Record<MetricKey, number>;
+export type MetricValue = {
+  [Key in MetricKey]: Key extends 'confirmedAmountRate' ? number | null : number;
+};
 
 type MetricFormat = 'amount' | 'integer' | 'percent';
 
@@ -181,8 +184,9 @@ export function buildMetricColumns<T extends MetricValue>(): ColumnsType<T> {
       key: metric.key,
       align: 'right' as const,
       width: metric.format === 'percent' ? 170 : 170,
-      sorter: (left: T, right: T) => left[metric.key] - right[metric.key],
-      render: (value: number) => formatMetricValue(value, metric.format),
+      sorter: (left: T, right: T) => (left[metric.key] ?? 0) - (right[metric.key] ?? 0),
+      render: (value: number | null) =>
+        value === null ? '—' : formatMetricValue(value, metric.format),
     })),
   }));
 }

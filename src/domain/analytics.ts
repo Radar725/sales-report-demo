@@ -32,7 +32,12 @@ export type ReportHistoricalRepurchaseContributionValues = {
 export type ReportSummaryRow = SummaryRow & ReportContributionValues;
 export type ReportBreakdownRow = BreakdownRow & ReportContributionValues;
 
-export type ReportComparisonValues = Partial<Record<ReportMetricKey, number | null>>;
+export type ReportComparisonMetricKey =
+  | ReportMetricKey
+  | 'confirmedAmount'
+  | 'confirmedAmountRate';
+
+export type ReportComparisonValues = Partial<Record<ReportComparisonMetricKey, number | null>>;
 
 export type ReportComparableSummaryRow = ReportSummaryRow & {
   comparison: ReportComparisonValues | null;
@@ -42,14 +47,19 @@ export type ReportComparableBreakdownRow = ReportBreakdownRow & {
   comparison: ReportComparisonValues | null;
 };
 
-const REPORT_METRIC_KEYS: ReportMetricKey[] = [
+const REPORT_METRIC_KEYS: ReportComparisonMetricKey[] = [
   'reportedAmount',
+  'confirmedAmount',
+  'confirmedAmountRate',
   'dealCount',
   'customerCount',
   'averageDealAmount',
   'reportedAmountRate',
   'dealCountRate',
   'customerCountRate',
+  'repurchaseCustomerTotalRate',
+  'repurchaseDealCountTotalRate',
+  'repurchaseAmountTotalRate',
 ];
 
 function isDateDimensionValue(value: string) {
@@ -160,6 +170,7 @@ function calculateMetrics(groupRecords: DealRecord[]): MetricValue {
   return {
     reportedAmount,
     confirmedAmount,
+    confirmedAmountRate: reportedAmount === 0 ? null : confirmedAmount / reportedAmount,
     dealCount,
     customerCount,
     averageDealAmount: safeDivide(reportedAmount, dealCount),
