@@ -16,6 +16,8 @@ type FilterBarProps = {
   filters: SalesDashboardFilters;
   records: DealRecord[];
   onFiltersChange: (filters: SalesDashboardFilters) => void;
+  onExportDimension: () => void;
+  onExportDetail: () => void;
 };
 
 const customerScopeOptions: Array<{ value: CustomerScopeFilter; label: string }> = [
@@ -101,6 +103,8 @@ export default function FilterBar({
   filters,
   records,
   onFiltersChange,
+  onExportDimension,
+  onExportDetail,
 }: FilterBarProps) {
   // --- local filter state (committed to parent on "查询") ---
   const [localFilters, setLocalFilters] = useState<SalesDashboardFilters>(() => ({
@@ -311,8 +315,12 @@ export default function FilterBar({
               查询
             </Button>
             <Button onClick={handleReset}>重置</Button>
-            <Button type="primary">导出汇总数据</Button>
-            <Button type="primary">导出明细数据</Button>
+            <Button type="primary" onClick={onExportDimension}>
+              导出维度数据
+            </Button>
+            <Button type="primary" onClick={onExportDetail}>
+              导出明细数据
+            </Button>
           </Space>
           <Button
             type="link"
@@ -329,8 +337,12 @@ export default function FilterBar({
               查询
             </Button>
             <Button onClick={handleReset}>重置</Button>
-            <Button type="primary">导出汇总数据</Button>
-            <Button type="primary">导出明细数据</Button>
+            <Button type="primary" onClick={onExportDimension}>
+              导出维度数据
+            </Button>
+            <Button type="primary" onClick={onExportDetail}>
+              导出明细数据
+            </Button>
           </Space>
           <Button
             type="link"

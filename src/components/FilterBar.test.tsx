@@ -28,7 +28,13 @@ const dealTypeTooltip =
 describe('FilterBar filter explanations', () => {
   it('shows info icons for customer scope and deal type labels', () => {
     render(
-      <FilterBar filters={defaultFilters} records={[]} onFiltersChange={vi.fn()} />,
+      <FilterBar
+        filters={defaultFilters}
+        records={[]}
+        onFiltersChange={vi.fn()}
+        onExportDimension={vi.fn()}
+        onExportDetail={vi.fn()}
+      />,
     );
 
     expect(screen.getByLabelText('客户统计范围说明')).toBeInTheDocument();
@@ -38,7 +44,13 @@ describe('FilterBar filter explanations', () => {
   it('shows approved tooltips when hovering the filter info icons', async () => {
     const user = userEvent.setup();
     render(
-      <FilterBar filters={defaultFilters} records={[]} onFiltersChange={vi.fn()} />,
+      <FilterBar
+        filters={defaultFilters}
+        records={[]}
+        onFiltersChange={vi.fn()}
+        onExportDimension={vi.fn()}
+        onExportDetail={vi.fn()}
+      />,
     );
 
     await user.hover(screen.getByLabelText('客户统计范围说明'));

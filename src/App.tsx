@@ -1,7 +1,8 @@
-import { Card, Select, Space, Tabs } from 'antd';
+import { Card, message, Select, Space, Tabs } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import BreakdownDrawer from './components/BreakdownDrawer';
+import ExportConfirmModal from './components/ExportConfirmModal';
 import FilterBar from './components/FilterBar';
 import FunnelBreakdownDrawer from './components/FunnelBreakdownDrawer';
 import FunnelFilterBar from './components/FunnelFilterBar';
@@ -32,6 +33,31 @@ import {
   type FunnelFilters,
   type FunnelSummaryRow,
 } from './domain/funnel';
+import {
+  exportFunnelSummary,
+  exportPerformanceDetails,
+  exportPerformanceSummary,
+} from './domain/exportExcel';
+
+type ExportConfirmType = 'performance-dimension' | 'performance-detail' | 'funnel';
+
+const exportConfirmConfig: Record<
+  ExportConfirmType,
+  { title: string; description: string }
+> = {
+  'performance-dimension': {
+    title: '导出维度数据',
+    description: '即将导出当前筛选条件下，按当前选择的主维度汇总的业绩数据，确定要导出吗？',
+  },
+  'performance-detail': {
+    title: '导出明细数据',
+    description: '即将导出当前筛选条件下的成交明细数据，确定要导出吗？',
+  },
+  funnel: {
+    title: '导出数据',
+    description: '即将导出当前筛选条件下，按当前选择的主维度汇总的客户转化漏斗数据，确定要导出吗？',
+  },
+};
 
 const today = dayjs().format('YYYY-MM-DD');
 
@@ -72,15 +98,16 @@ const funnelDimensions = [
 
 export default function App() {
   const [activeReport, setActiveReport] = useState<'performance' | 'funnel'>('performance');
-  const [primaryDimension, setPrimaryDimension] = useState<DimensionKey>('consultant');
+  const [primaryDimension, setPrimaryDimension] = useState<DimensionKey>('total');
   const [filters, setFilters] = useState<SalesDashboardFilters>(defaultFilters);
   const [selectedBreakdownRow, setSelectedBreakdownRow] = useState<ReportSummaryRow | null>(null);
   const [selectedDetailRow, setSelectedDetailRow] = useState<ReportSummaryRow | null>(null);
 
   // Funnel state
   const [funnelFilters, setFunnelFilters] = useState<FunnelFilters>(defaultFunnelFilters);
-  const [funnelPrimaryDimension, setFunnelPrimaryDimension] = useState<FunnelDimensionKey>('consultant');
+  const [funnelPrimaryDimension, setFunnelPrimaryDimension] = useState<FunnelDimensionKey>('total');
   const [selectedFunnelBreakdownRow, setSelectedFunnelBreakdownRow] = useState<FunnelSummaryRow | null>(null);
+  const [pendingExport, setPendingExport] = useState<ExportConfirmType | null>(null);
 
   const filteredRecords = useMemo(() => filterDealRecords(demoDealRecords, filters), [filters]);
   const baselineRecords = useMemo(
@@ -213,6 +240,30 @@ export default function App() {
     hasFunnelComparison,
   ]);
 
+  const funnelPrimaryDimensionConfig =
+    funnelDimensions.find((dimension) => dimension.key === funnelPrimaryDimension) ?? funnelDimensions[0];
+
+  const handleExportConfirm = () => {
+    if (!pendingExport) {
+      return;
+    }
+
+    message.info('导出数据中，请稍等');
+
+    if (pendingExport === 'performance-dimension') {
+      exportPerformanceSummary(summaryRows, primaryDimensionConfig.label, {
+        customerScope: filters.customerScope,
+        dealType: filters.dealType,
+      });
+    } else if (pendingExport === 'performance-detail') {
+      exportPerformanceDetails(filteredRecords);
+    } else {
+      exportFunnelSummary(funnelSummaryRows, funnelPrimaryDimensionConfig.label);
+    }
+
+    setPendingExport(null);
+  };
+
   return (
     <main className="app-shell">
       <Tabs
@@ -234,6 +285,8 @@ export default function App() {
                       setSelectedBreakdownRow(null);
                       setSelectedDetailRow(null);
                     }}
+                    onExportDimension={() => setPendingExport('performance-dimension')}
+                    onExportDetail={() => setPendingExport('performance-detail')}
                   />
                 </Card>
                 <Card className="content-card">
@@ -307,6 +360,7 @@ export default function App() {
                       setFunnelFilters(nextFilters);
                       setSelectedFunnelBreakdownRow(null);
                     }}
+                    onExport={() => setPendingExport('funnel')}
                   />
                 </Card>
                 <Card className="content-card">
@@ -331,9 +385,7 @@ export default function App() {
                     </Space>
                   </div>
                   <FunnelTable
-                    primaryDimension={
-                      funnelDimensions.find((d) => d.key === funnelPrimaryDimension) ?? funnelDimensions[0]
-                    }
+                    primaryDimension={funnelPrimaryDimensionConfig}
                     rows={funnelSummaryRows}
                     hasComparison={hasFunnelComparison}
                     onOpenBreakdown={setSelectedFunnelBreakdownRow}
@@ -355,6 +407,13 @@ export default function App() {
             ),
           },
         ]}
+      />
+      <ExportConfirmModal
+        open={pendingExport !== null}
+        title={pendingExport ? exportConfirmConfig[pendingExport].title : ''}
+        description={pendingExport ? exportConfirmConfig[pendingExport].description : ''}
+        onConfirm={handleExportConfirm}
+        onCancel={() => setPendingExport(null)}
       />
     </main>
   );

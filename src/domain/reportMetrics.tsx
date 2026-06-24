@@ -132,6 +132,21 @@ function shouldShowShareRates(filters: ReportColumnFilters) {
   return !(filters.customerScope === 'all' && filters.dealType === 'all');
 }
 
+export function getReportMetricDefinitions(filters: ReportColumnFilters) {
+  const metrics = [
+    ...baseMetrics,
+    ...(shouldShowShareRates(filters) ? shareMetrics : []),
+    ...contributionMetrics,
+    ...(filters.dealType === 'repurchase' ? repurchaseTotalContributionMetrics : []),
+  ];
+
+  return metrics.map((metric) => ({
+    key: metric.key,
+    label: getMetricLabel(metric.label, filters, metric),
+    format: metric.format,
+  }));
+}
+
 export function buildReportMetricColumns<T extends ReportMetricValue & ComparableRecord>(
   filters: ReportColumnFilters,
   hasComparison = false,

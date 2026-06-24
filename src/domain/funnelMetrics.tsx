@@ -67,6 +67,14 @@ function renderMetricCell(
   );
 }
 
+export function getFunnelMetricDefinitions() {
+  return funnelMetrics.map((metric) => ({
+    key: metric.key,
+    label: metric.label,
+    format: metric.format,
+  }));
+}
+
 export function buildFunnelMetricColumns<
   T extends Record<string, unknown> & ComparableRecord,
 >(hasComparison = false): ColumnsType<T> {

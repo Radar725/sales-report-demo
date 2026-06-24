@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { getDefaultComparisonDateRange } from './domain/comparison';
+import * as downloadBlobModule from './utils/downloadBlob';
 
 async function selectOption(user: ReturnType<typeof userEvent.setup>, label: string, option: string) {
   const formItem = screen.getByText(label).closest('.ant-form-item')!;
@@ -22,6 +23,11 @@ async function applyFilters(user: ReturnType<typeof userEvent.setup>) {
 
 async function selectPrimaryDimension(user: ReturnType<typeof userEvent.setup>, option: string) {
   await user.click(screen.getByRole('combobox', { name: '主维度' }));
+  await user.click(await screen.findByRole('option', { name: option }));
+}
+
+async function selectFunnelPrimaryDimension(user: ReturnType<typeof userEvent.setup>, option: string) {
+  await user.click(screen.getByRole('combobox', { name: '漏斗主维度' }));
   await user.click(await screen.findByRole('option', { name: option }));
 }
 
@@ -101,6 +107,7 @@ describe('App', () => {
     await setDateRange(user);
     await selectOption(user, '客户统计范围', '老客');
     await applyFilters(user);
+    await selectPrimaryDimension(user, '咨询师');
 
     expect(screen.getByRole('cell', { name: '张敏' })).toBeInTheDocument();
   });
@@ -134,6 +141,7 @@ describe('App', () => {
 
     await setDateRange(user);
     await applyFilters(user);
+    await selectPrimaryDimension(user, '咨询师');
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     expect(within(screen.getByRole('dialog', { name: /业绩拆解/ })).queryByRole('tab', { name: '部门' })).not.toBeInTheDocument();
@@ -173,6 +181,7 @@ describe('App', () => {
     await setDateRange(user);
     await selectOption(user, '客户统计范围', '新客');
     await applyFilters(user);
+    await selectPrimaryDimension(user, '咨询师');
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -208,12 +217,9 @@ describe('App', () => {
     }
   });
 
-  it('shows a single total row, disables breakdown, and opens total details', async () => {
+  it('defaults primary dimension to total, disables breakdown, and opens total details', async () => {
     const user = userEvent.setup();
     render(<App />);
-
-    await user.click(screen.getByRole('combobox', { name: '主维度' }));
-    await user.click(await screen.findByRole('option', { name: '汇总' }));
 
     expect(screen.getByRole('cell', { name: '汇总' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: '业绩拆解' })).toHaveLength(1);
@@ -231,6 +237,7 @@ describe('App', () => {
     await selectOption(user, '客户统计范围', '老客');
     await selectOption(user, '成交类型', '复购');
     await applyFilters(user);
+    await selectPrimaryDimension(user, '咨询师');
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
 
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
@@ -269,6 +276,7 @@ describe('App', () => {
 
     expect(screen.getByRole('combobox', { name: '漏斗主维度' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '录单客户数' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '漏斗主维度' }).closest('.ant-select')).toHaveTextContent('汇总');
   });
 
   it('keeps performance filter state isolated from funnel changes', async () => {
@@ -330,6 +338,7 @@ describe('App', () => {
     render(<App />);
     await setDateRange(user);
     await applyFilters(user);
+    await selectPrimaryDimension(user, '咨询师');
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
     const breakdownDrawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     expect(breakdownDrawer.querySelector('.metric-change')).toBeTruthy();
@@ -354,6 +363,7 @@ describe('App', () => {
     await user.click(queryBtns[queryBtns.length - 1]);
     expect(document.querySelector('.report-table .metric-change')).toBeTruthy();
 
+    await selectFunnelPrimaryDimension(user, '咨询师');
     await user.click(screen.getAllByRole('button', { name: '维度拆解' })[0]);
     const funnelDrawer = screen.getByRole('dialog', { name: /转化漏斗拆解/ });
     expect(funnelDrawer.querySelector('.metric-change')).toBeTruthy();
@@ -376,6 +386,7 @@ describe('App', () => {
       expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument();
     }
 
+    await selectPrimaryDimension(user, '咨询师');
     await user.click(screen.getAllByRole('button', { name: '业绩拆解' })[0]);
     const drawer = screen.getByRole('dialog', { name: /业绩拆解/ });
     for (const column of [
@@ -472,8 +483,84 @@ describe('App', () => {
     const queryBtns = screen.getAllByRole('button', { name: '查 询' });
     await user.click(queryBtns[queryBtns.length - 1]);
 
+    await selectFunnelPrimaryDimension(user, '咨询师');
     const zhangMinRow = screen.getByRole('cell', { name: '张敏' }).closest('tr')!;
     expect(zhangMinRow.textContent).toMatch(/^张敏3/);
+  });
+
+  describe('export confirmation', () => {
+    beforeEach(() => {
+      vi.spyOn(downloadBlobModule, 'downloadBlob').mockImplementation(() => {});
+    });
+
+    it('shows dimension export confirmation with primary-dimension wording', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      await user.click(within(document.querySelector('.filter-bar')!).getByRole('button', { name: '导出维度数据' }));
+
+      expect(screen.getByRole('dialog', { name: '导出维度数据' })).toHaveTextContent(
+        '按当前选择的主维度',
+      );
+    });
+
+    it('does not download when export confirmation is cancelled', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      await user.click(within(document.querySelector('.filter-bar')!).getByRole('button', { name: '导出明细数据' }));
+      await user.click(screen.getByRole('button', { name: '取 消' }));
+
+      expect(downloadBlobModule.downloadBlob).not.toHaveBeenCalled();
+      expect(screen.queryByRole('dialog', { name: '导出明细数据' })).not.toBeInTheDocument();
+    });
+
+    it('downloads excel and shows toast after confirming export', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      await user.click(within(document.querySelector('.filter-bar')!).getByRole('button', { name: '导出维度数据' }));
+      await user.click(screen.getByRole('button', { name: '确 认' }));
+
+      expect(downloadBlobModule.downloadBlob).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(downloadBlobModule.downloadBlob).mock.calls[0][1]).toBe('业绩报表-维度数据.xlsx');
+      expect(screen.getByText('导出数据中，请稍等')).toBeInTheDocument();
+    });
+
+    it('shows funnel export confirmation and downloads funnel summary', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+      await openFunnelReport(user);
+
+      const funnelFilterBar = screen.getAllByText('录单时间')[0].closest('.filter-bar')!;
+      await user.click(within(funnelFilterBar as HTMLElement).getByRole('button', { name: '导出数据' }));
+      expect(screen.getByRole('dialog', { name: '导出数据' })).toHaveTextContent(
+        '按当前选择的主维度汇总的客户转化漏斗数据',
+      );
+
+      await user.click(screen.getByRole('button', { name: '确 认' }));
+      expect(downloadBlobModule.downloadBlob).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(downloadBlobModule.downloadBlob).mock.calls[0][1]).toBe('转化漏斗报表-导出数据.xlsx');
+    });
+  });
+
+  describe('table customize hint', () => {
+    it('shows customize hint from performance summary actions header', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      await user.click(screen.getByRole('button', { name: '列表自定义' }));
+      expect(screen.getByRole('dialog', { name: '列表自定义' })).toHaveTextContent('支持用户自定义列表');
+    });
+
+    it('shows customize hint from funnel summary actions header', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+      await openFunnelReport(user);
+
+      await user.click(screen.getByRole('button', { name: '列表自定义' }));
+      expect(screen.getByRole('dialog', { name: '列表自定义' })).toHaveTextContent('支持用户自定义列表');
+    });
   });
 
 });

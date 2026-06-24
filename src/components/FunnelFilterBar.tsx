@@ -14,6 +14,7 @@ type FunnelFilterBarProps = {
   filters: FunnelFilters;
   records: FunnelCustomerRecord[];
   onFiltersChange: (filters: FunnelFilters) => void;
+  onExport: () => void;
 };
 
 function toSelectOptions(values: string[]) {
@@ -61,6 +62,7 @@ export default function FunnelFilterBar({
   filters,
   records,
   onFiltersChange,
+  onExport,
 }: FunnelFilterBarProps) {
   const [localFilters, setLocalFilters] = useState<FunnelFilters>(() => ({
     ...defaultFunnelFiltersReset,
@@ -210,7 +212,9 @@ export default function FunnelFilterBar({
             查询
           </Button>
           <Button onClick={handleReset}>重置</Button>
-          <Button type="primary">导出数据</Button>
+          <Button type="primary" onClick={onExport}>
+            导出数据
+          </Button>
         </Space>
       </Form.Item>
     </Form>

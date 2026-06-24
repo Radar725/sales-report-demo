@@ -1,5 +1,8 @@
 import { Button, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useState } from 'react';
+import { ActionsColumnTitle } from './ActionsColumnTitle';
+import TableCustomizeHintModal from './TableCustomizeHintModal';
 import type { Dimension } from '../domain/dimensions';
 import type { ReportSummaryRow } from '../domain/analytics';
 import { buildReportMetricColumns, type ReportColumnFilters } from '../domain/reportMetrics';
@@ -21,6 +24,8 @@ export default function SummaryTable({
   onOpenBreakdown,
   onOpenDetails,
 }: SummaryTableProps) {
+  const [customizeHintOpen, setCustomizeHintOpen] = useState(false);
+
   const columns: ColumnsType<ReportSummaryRow> = [
     {
       title: primaryDimension.label,
@@ -31,7 +36,7 @@ export default function SummaryTable({
     },
     ...buildReportMetricColumns<ReportSummaryRow>(filters, hasComparison),
     {
-      title: '操作',
+      title: <ActionsColumnTitle onCustomizeClick={() => setCustomizeHintOpen(true)} />,
       key: 'actions',
       fixed: 'right',
       width: 152,
@@ -54,15 +59,18 @@ export default function SummaryTable({
   ];
 
   return (
-    <Table
-      className="report-table"
-      rowKey="key"
-      columns={columns}
-      dataSource={rows}
-      pagination={false}
-      bordered
-      scroll={{ x: 1112 }}
-      showSorterTooltip={{ target: 'sorter-icon' }}
-    />
+    <>
+      <Table
+        className="report-table"
+        rowKey="key"
+        columns={columns}
+        dataSource={rows}
+        pagination={false}
+        bordered
+        scroll={{ x: 1112 }}
+        showSorterTooltip={{ target: 'sorter-icon' }}
+      />
+      <TableCustomizeHintModal open={customizeHintOpen} onClose={() => setCustomizeHintOpen(false)} />
+    </>
   );
 }

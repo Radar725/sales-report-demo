@@ -67,3 +67,18 @@ body {
 .metric-change.is-unavailable {
   color: #6b7280;
 }
+
+.actions-column-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.actions-column-settings {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0;
+}
