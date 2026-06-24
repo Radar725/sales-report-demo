@@ -4,7 +4,9 @@
 
 ## 在线访问
 
-部署后在此填写 Demo 地址，例如：`https://sales-report-demo.vercel.app`
+**Demo 地址：** https://sales-report-demo-fkjh4124e-taoxi.vercel.app
+
+（Vercel 项目里也可查看稳定的 Production 域名。）
 
 ## 功能说明文档
 
