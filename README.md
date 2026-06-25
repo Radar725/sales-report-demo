@@ -4,7 +4,7 @@
 
 ## 在线访问
 
-**Demo 地址：** https://sales-report-demo-fkjh4124e-taoxi.vercel.app
+**Demo 地址：** https://sales-report-demo.vercel.app
 
 ## 功能说明文档
 
