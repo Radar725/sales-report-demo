@@ -544,22 +544,41 @@ describe('App', () => {
     });
   });
 
-  describe('table customize hint', () => {
-    it('shows customize hint from performance summary actions header', async () => {
+  describe('table column settings', () => {
+    it('opens column settings modal from performance summary actions header', async () => {
       const user = userEvent.setup();
       render(<App />);
 
       await user.click(screen.getByRole('button', { name: '列表自定义' }));
-      expect(screen.getByRole('dialog', { name: '列表自定义' })).toHaveTextContent('支持用户自定义列表');
+      expect(await screen.findByText('列表配置')).toBeInTheDocument();
+      expect(screen.getByText('可选字段')).toBeInTheDocument();
     });
 
-    it('shows customize hint from funnel summary actions header', async () => {
+    it('opens column settings modal from funnel summary actions header', async () => {
       const user = userEvent.setup();
       render(<App />);
       await openFunnelReport(user);
 
       await user.click(screen.getByRole('button', { name: '列表自定义' }));
-      expect(screen.getByRole('dialog', { name: '列表自定义' })).toHaveTextContent('支持用户自定义列表');
+      expect(await screen.findByText('列表配置')).toBeInTheDocument();
+      expect(screen.getByText('可选字段')).toBeInTheDocument();
+    });
+
+    it('shows full performance catalog in modal when deal type is new diagnosis', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      await selectOption(user, '成交类型', '新诊');
+      await applyFilters(user);
+      expect(screen.queryByRole('columnheader', { name: /复购客户历史占比/ })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: '列表自定义' }));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('列表配置')).toBeInTheDocument();
+      for (const label of ['复购客户历史占比', '复购单量历史占比', '复购业绩历史占比']) {
+        expect(within(dialog).getAllByText(label).length).toBeGreaterThan(0);
+      }
+      expect(within(dialog).queryByText('新诊上报业绩')).not.toBeInTheDocument();
     });
   });
 

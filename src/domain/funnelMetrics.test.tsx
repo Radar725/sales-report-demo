@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MetricColumnTitle } from '../components/MetricColumnTitle';
-import { buildFunnelMetricColumns } from './funnelMetrics';
+import { buildFunnelMetricColumns, getFunnelMetricSettingCatalog } from './funnelMetrics';
 
 const funnelMetricDescriptions: Record<string, string> = {
   录单客户数: '录单时间落在统计期内的去重客户数，包含有效和无效客户。',
@@ -93,5 +93,27 @@ describe('funnel metric columns', () => {
     render(<>{columns[0].render?.(3, record, 0)}</>);
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('↑ 50.0%')).toBeInTheDocument();
+  });
+
+  it('exposes full setting catalog with all funnel metrics', () => {
+    const catalog = getFunnelMetricSettingCatalog();
+    expect(catalog).toHaveLength(15);
+    expect(catalog.map((column) => column.filterTitle)).toEqual([
+      '录单客户数',
+      '有效客户数',
+      '已加微客户数',
+      '已派单客户数',
+      '已邀约客户数',
+      '已到院客户数',
+      '已成交客户数',
+      '已复购客户数',
+      '有效客户率',
+      '加微率',
+      '派单率',
+      '邀约率',
+      '到院率',
+      '成交率',
+      '复购率',
+    ]);
   });
 });

@@ -75,11 +75,24 @@ export function getFunnelMetricDefinitions() {
   }));
 }
 
+/** 列表设置弹窗用的完整字段目录 */
+export function getFunnelMetricSettingCatalog() {
+  return funnelMetrics.map((metric) => ({
+    key: metric.key,
+    title: metric.label,
+    filterTitle: metric.label,
+    dataIndex: metric.key,
+    align: 'right' as const,
+    width: metric.width,
+  }));
+}
+
 export function buildFunnelMetricColumns<
   T extends Record<string, unknown> & ComparableRecord,
 >(hasComparison = false): ColumnsType<T> {
   return funnelMetrics.map((metric) => ({
     title: <MetricColumnTitle label={metric.label} description={metric.description} />,
+    filterTitle: metric.label,
     dataIndex: metric.key,
     key: metric.key,
     align: 'right' as const,

@@ -1,11 +1,10 @@
 import { Button, Space, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { ActionsColumnTitle } from './ActionsColumnTitle';
-import TableCustomizeHintModal from './TableCustomizeHintModal';
+import { useTableColumnSettings } from './TableColumnSettings';
 import type { Dimension } from '../domain/dimensions';
 import type { ReportSummaryRow } from '../domain/analytics';
-import { buildReportMetricColumns, type ReportColumnFilters } from '../domain/reportMetrics';
+import { buildReportMetricColumns, getPerformanceReportSettingCatalog, type ReportColumnFilters } from '../domain/reportMetrics';
 
 type SummaryTableProps = {
   primaryDimension: Dimension;
@@ -24,53 +23,82 @@ export default function SummaryTable({
   onOpenBreakdown,
   onOpenDetails,
 }: SummaryTableProps) {
-  const [customizeHintOpen, setCustomizeHintOpen] = useState(false);
+  const baseColumns = useMemo(
+    () => [
+      {
+        title: primaryDimension.label,
+        dataIndex: 'primaryDimensionValue',
+        key: 'primaryDimensionValue',
+        fixed: 'left' as const,
+        width: 140,
+        disabledSetting: true,
+      },
+      ...buildReportMetricColumns<ReportSummaryRow>(filters, hasComparison),
+      {
+        title: <ActionsColumnTitle onCustomizeClick={() => undefined} />,
+        key: 'actions',
+        fixed: 'right' as const,
+        width: 152,
+        disabledSetting: true,
+        render: (_: unknown, row: ReportSummaryRow) => (
+          <Space size={4}>
+            <Button
+              type="link"
+              style={{ paddingInline: 4 }}
+              disabled={primaryDimension.key === 'total'}
+              onClick={() => onOpenBreakdown(row)}
+            >
+              业绩拆解
+            </Button>
+            <Button type="link" style={{ paddingInline: 4 }} onClick={() => onOpenDetails(row)}>
+              业绩明细
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    [filters, hasComparison, onOpenBreakdown, onOpenDetails, primaryDimension.key, primaryDimension.label],
+  );
 
-  const columns: ColumnsType<ReportSummaryRow> = [
+  const settingCatalog = useMemo(() => getPerformanceReportSettingCatalog(), []);
+
+  const { columns, tableSize, scroll, openSettings, settingsModal } = useTableColumnSettings(
+    'SALES_REPORT_SUMMARY',
+    baseColumns,
     {
-      title: primaryDimension.label,
-      dataIndex: 'primaryDimensionValue',
-      key: 'primaryDimensionValue',
-      fixed: 'left',
-      width: 140,
+      scroll: { x: 1112 },
+      settingCatalog,
     },
-    ...buildReportMetricColumns<ReportSummaryRow>(filters, hasComparison),
-    {
-      title: <ActionsColumnTitle onCustomizeClick={() => setCustomizeHintOpen(true)} />,
-      key: 'actions',
-      fixed: 'right',
-      width: 152,
-      render: (_, row) => (
-        <Space size={4}>
-          <Button
-            type="link"
-            style={{ paddingInline: 4 }}
-            disabled={primaryDimension.key === 'total'}
-            onClick={() => onOpenBreakdown(row)}
-          >
-            业绩拆解
-          </Button>
-          <Button type="link" style={{ paddingInline: 4 }} onClick={() => onOpenDetails(row)}>
-            业绩明细
-          </Button>
-        </Space>
-      ),
-    },
-  ];
+  );
+
+  const columnsWithSettingsAction = useMemo(
+    () =>
+      columns.map((column) => {
+        if (column.key !== 'actions') {
+          return column;
+        }
+        return {
+          ...column,
+          title: <ActionsColumnTitle onCustomizeClick={openSettings} />,
+        };
+      }),
+    [columns, openSettings],
+  );
 
   return (
     <>
       <Table
         className="report-table"
         rowKey="key"
-        columns={columns}
+        columns={columnsWithSettingsAction}
         dataSource={rows}
         pagination={false}
         bordered
-        scroll={{ x: 1112 }}
+        size={tableSize}
+        scroll={scroll}
         showSorterTooltip={{ target: 'sorter-icon' }}
       />
-      <TableCustomizeHintModal open={customizeHintOpen} onClose={() => setCustomizeHintOpen(false)} />
+      {settingsModal}
     </>
   );
 }

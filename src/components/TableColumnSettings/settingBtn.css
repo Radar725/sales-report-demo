@@ -1,0 +1,21 @@
+.table-column-setting-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+}
+
+.table-column-setting-btn:hover {
+  color: #1677ff;
+  border-color: #1677ff;
+}

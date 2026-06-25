@@ -1,0 +1,96 @@
+.table-column-settings-modal .column-row:hover .column-row-action {
+  opacity: 1;
+}
+
+.table-column-settings-modal .column-row-action {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.table-column-settings-modal .column-row-action.is-visible {
+  opacity: 1;
+}
+
+.table-column-settings-modal .settings-layout {
+  display: flex;
+  overflow: hidden;
+  height: 100%;
+}
+
+.table-column-settings-modal .settings-left {
+  flex: 1;
+  border-right: 1px solid #f0f0f0;
+  padding-right: 16px;
+  margin-right: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.table-column-settings-modal .settings-right {
+  width: 300px;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.table-column-settings-modal .settings-inline-group {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.table-column-settings-modal .settings-label {
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 4px;
+}
+
+.table-column-settings-modal .settings-section-title {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.table-column-settings-modal .column-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 4px 4px 0;
+  background: #fff;
+}
+
+.table-column-settings-modal .column-row-title {
+  flex: 1;
+}
+
+.table-column-settings-modal .column-row-actions {
+  width: 60px;
+  margin-left: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.table-column-settings-modal .picker-header {
+  margin-bottom: 8px;
+}
+
+.table-column-settings-modal .picker-header-label {
+  color: rgba(0, 0, 0, 0.45);
+  margin-right: 16px;
+}
+
+.table-column-settings-modal .modal-title-row {
+  display: flex;
+  align-items: center;
+}
+
+.table-column-settings-modal .modal-title-row .title-text {
+  margin-right: 16px;
+}
+
+.table-column-settings-modal .hidden-block {
+  display: none;
+}

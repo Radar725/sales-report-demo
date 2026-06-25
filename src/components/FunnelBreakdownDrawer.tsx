@@ -1,5 +1,5 @@
 import { Drawer, Space, Table, Tabs } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { useMemo } from 'react';
 import type { FunnelCustomerRecord } from '../data/mockFunnelCustomers';
 import {
   attachFunnelComparison,
@@ -10,6 +10,54 @@ import {
   type FunnelSummaryRow,
 } from '../domain/funnel';
 import { buildFunnelMetricColumns } from '../domain/funnelMetrics';
+import { useAppliedTableColumnSettings } from './TableColumnSettings';
+
+type FunnelBreakdownTabTableProps = {
+  breakdownDimension: { key: string; label: string };
+  hasComparison: boolean;
+  dataSource: FunnelBreakdownRow[];
+};
+
+function FunnelBreakdownTabTable({
+  breakdownDimension,
+  hasComparison,
+  dataSource,
+}: FunnelBreakdownTabTableProps) {
+  const baseColumns = useMemo(
+    () => [
+      {
+        title: breakdownDimension.label,
+        dataIndex: 'breakdownDimensionValue',
+        key: 'breakdownDimensionValue',
+        fixed: 'left' as const,
+        width: 140,
+        disabledSetting: true,
+      },
+      ...buildFunnelMetricColumns<FunnelBreakdownRow>(hasComparison),
+    ],
+    [breakdownDimension.label, hasComparison],
+  );
+
+  const { columns, tableSize, scroll } = useAppliedTableColumnSettings(
+    'SALES_REPORT_FUNNEL',
+    baseColumns,
+    { scroll: { x: 1500 } },
+  );
+
+  return (
+    <Table
+      className="report-table"
+      rowKey="key"
+      columns={columns}
+      dataSource={dataSource}
+      pagination={false}
+      bordered
+      size={tableSize}
+      scroll={scroll}
+      showSorterTooltip={{ target: 'sorter-icon' }}
+    />
+  );
+}
 
 type FunnelBreakdownDrawerProps = {
   open: boolean;
@@ -58,31 +106,15 @@ export default function FunnelBreakdownDrawer({
                 )
               : currentRows;
 
-            const columns: ColumnsType<FunnelBreakdownRow> = [
-              {
-                title: breakdownDimension.label,
-                dataIndex: 'breakdownDimensionValue',
-                key: 'breakdownDimensionValue',
-                fixed: 'left',
-                width: 140,
-              },
-              ...buildFunnelMetricColumns<FunnelBreakdownRow>(hasComparison),
-            ];
-
             return {
               key: breakdownDimension.key,
               label: breakdownDimension.label,
               children: (
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Table
-                    className="report-table"
-                    rowKey="key"
-                    columns={columns}
+                  <FunnelBreakdownTabTable
+                    breakdownDimension={breakdownDimension}
+                    hasComparison={hasComparison}
                     dataSource={dataSource}
-                    pagination={false}
-                    bordered
-                    scroll={{ x: 1500 }}
-                    showSorterTooltip={{ target: 'sorter-icon' }}
                   />
                 </Space>
               ),

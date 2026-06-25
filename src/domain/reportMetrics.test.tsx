@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MetricColumnTitle } from '../components/MetricColumnTitle';
-import { buildReportMetricColumns, REPORT_METRIC_WIDTHS } from './reportMetrics';
+import { buildReportMetricColumns, getPerformanceReportSettingCatalog, REPORT_METRIC_WIDTHS } from './reportMetrics';
 
 const allFilters = { customerScope: 'all', dealType: 'all' } as const;
 
@@ -229,5 +229,48 @@ describe('report metric columns', () => {
     }, 0)}</>);
     expect(screen.getByText('25.0%')).toBeInTheDocument();
     expect(screen.getByText('↑ 50.0%')).toBeInTheDocument();
+  });
+
+  it('exposes full setting catalog with canonical labels regardless of filters', () => {
+    const catalog = getPerformanceReportSettingCatalog();
+
+    expect(catalog.map((column) => column.key)).toEqual([
+      'reportedAmount',
+      'confirmedAmount',
+      'confirmedAmountRate',
+      'dealCount',
+      'customerCount',
+      'averageDealAmount',
+      'reportedAmountRate',
+      'dealCountRate',
+      'customerCountRate',
+      'reportedAmountContributionRate',
+      'dealCountContributionRate',
+      'customerCountContributionRate',
+      'repurchaseCustomerTotalRate',
+      'repurchaseDealCountTotalRate',
+      'repurchaseAmountTotalRate',
+    ]);
+    expect(catalog.map((column) => column.filterTitle)).toEqual([
+      '上报业绩',
+      '确认业绩',
+      '业绩确认率',
+      '成交单量',
+      '成交客户数',
+      '客单价',
+      '业绩占比',
+      '成交单量占比',
+      '成交客户占比',
+      '业绩贡献',
+      '成交单量贡献',
+      '成交客户贡献',
+      '复购客户历史占比',
+      '复购单量历史占比',
+      '复购业绩历史占比',
+    ]);
+    expect(catalog.find((column) => column.key === 'reportedAmount')?.filterTitle).toBe('上报业绩');
+    expect(catalog.find((column) => column.key === 'repurchaseCustomerTotalRate')?.filterTitle).toBe(
+      '复购客户历史占比',
+    );
   });
 });

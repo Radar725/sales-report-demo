@@ -132,6 +132,25 @@ function shouldShowShareRates(filters: ReportColumnFilters) {
   return !(filters.customerScope === 'all' && filters.dealType === 'all');
 }
 
+const allReportMetrics: ReportMetricDefinition[] = [
+  ...baseMetrics,
+  ...shareMetrics,
+  ...contributionMetrics,
+  ...repurchaseTotalContributionMetrics,
+];
+
+/** 列表设置弹窗用的完整字段目录（规范名、无前缀，不受筛选影响） */
+export function getPerformanceReportSettingCatalog() {
+  return allReportMetrics.map((metric) => ({
+    key: metric.key,
+    title: metric.label,
+    filterTitle: metric.label,
+    dataIndex: metric.key,
+    align: 'right' as const,
+    width: metric.width,
+  }));
+}
+
 export function getReportMetricDefinitions(filters: ReportColumnFilters) {
   const metrics = [
     ...baseMetrics,
@@ -165,6 +184,7 @@ export function buildReportMetricColumns<T extends ReportMetricValue & Comparabl
         description={metric.description}
       />
     ),
+    filterTitle: getMetricLabel(metric.label, filters, metric),
     dataIndex: metric.key,
     key: metric.key,
     align: 'right',

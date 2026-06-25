@@ -1,10 +1,9 @@
 import { Button, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { ActionsColumnTitle } from './ActionsColumnTitle';
-import TableCustomizeHintModal from './TableCustomizeHintModal';
+import { useTableColumnSettings } from './TableColumnSettings';
 import type { FunnelSummaryRow } from '../domain/funnel';
-import { buildFunnelMetricColumns } from '../domain/funnelMetrics';
+import { buildFunnelMetricColumns, getFunnelMetricSettingCatalog } from '../domain/funnelMetrics';
 
 type FunnelTableProps = {
   primaryDimension: { key: string; label: string };
@@ -19,48 +18,77 @@ export function FunnelTable({
   hasComparison,
   onOpenBreakdown,
 }: FunnelTableProps) {
-  const [customizeHintOpen, setCustomizeHintOpen] = useState(false);
+  const baseColumns = useMemo(
+    () => [
+      {
+        title: primaryDimension.label,
+        dataIndex: 'primaryDimensionValue',
+        key: 'primaryDimensionValue',
+        fixed: 'left' as const,
+        width: 140,
+        disabledSetting: true,
+      },
+      ...buildFunnelMetricColumns<FunnelSummaryRow>(hasComparison),
+      {
+        title: <ActionsColumnTitle onCustomizeClick={() => undefined} />,
+        key: 'actions',
+        fixed: 'right' as const,
+        width: 100,
+        disabledSetting: true,
+        onCell: () => ({ style: { textAlign: 'center' as const } }),
+        render: (_: unknown, row: FunnelSummaryRow) => (
+          <Button
+            type="link"
+            disabled={primaryDimension.key === 'total'}
+            onClick={() => onOpenBreakdown(row)}
+          >
+            维度拆解
+          </Button>
+        ),
+      },
+    ],
+    [hasComparison, onOpenBreakdown, primaryDimension.key, primaryDimension.label],
+  );
 
-  const columns: ColumnsType<FunnelSummaryRow> = [
+  const settingCatalog = useMemo(() => getFunnelMetricSettingCatalog(), []);
+
+  const { columns, tableSize, scroll, openSettings, settingsModal } = useTableColumnSettings(
+    'SALES_REPORT_FUNNEL',
+    baseColumns,
     {
-      title: primaryDimension.label,
-      dataIndex: 'primaryDimensionValue',
-      key: 'primaryDimensionValue',
-      fixed: 'left',
-      width: 140,
+      scroll: { x: 1800 },
+      settingCatalog,
     },
-    ...buildFunnelMetricColumns<FunnelSummaryRow>(hasComparison),
-    {
-      title: <ActionsColumnTitle onCustomizeClick={() => setCustomizeHintOpen(true)} />,
-      key: 'actions',
-      fixed: 'right',
-      width: 100,
-      onCell: () => ({ style: { textAlign: 'center' } }),
-      render: (_, row) => (
-        <Button
-          type="link"
-          disabled={primaryDimension.key === 'total'}
-          onClick={() => onOpenBreakdown(row)}
-        >
-          维度拆解
-        </Button>
-      ),
-    },
-  ];
+  );
+
+  const columnsWithSettingsAction = useMemo(
+    () =>
+      columns.map((column) => {
+        if (column.key !== 'actions') {
+          return column;
+        }
+        return {
+          ...column,
+          title: <ActionsColumnTitle onCustomizeClick={openSettings} />,
+        };
+      }),
+    [columns, openSettings],
+  );
 
   return (
     <>
       <Table
         className="report-table"
         rowKey="key"
-        columns={columns}
+        columns={columnsWithSettingsAction}
         dataSource={rows}
         pagination={false}
         bordered
-        scroll={{ x: 1800 }}
+        size={tableSize}
+        scroll={scroll}
         showSorterTooltip={{ target: 'sorter-icon' }}
       />
-      <TableCustomizeHintModal open={customizeHintOpen} onClose={() => setCustomizeHintOpen(false)} />
+      {settingsModal}
     </>
   );
 }
